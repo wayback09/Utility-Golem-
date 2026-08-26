@@ -7,6 +7,16 @@ const path = require('path');
 
 function getFormsConfig(guildId) {
   try {
+    // DB authoritative — file is fallback only
+    const settings = db.getGuildSettings(guildId);
+    if (settings && (settings.forms_puzzle_channel || settings.forms_puzzle_role || settings.forms_puzzle_publicChannel)) {
+      return {
+        channel: settings.forms_puzzle_channel || null,
+        role: settings.forms_puzzle_role || null,
+        publicChannel: settings.forms_puzzle_publicChannel || null,
+        postRole: settings.forms_puzzle_postRole || null
+      };
+    }
     const cfg = db.getGuildConfig(guildId);
     return (cfg.forms && cfg.forms.puzzlesubmit) || null;
   } catch (e) {
@@ -76,7 +86,7 @@ module.exports = {
 
     if (!cfg || !cfg.channel || !cfg.role) {
       return interaction.editReply({
-        content: "The puzzle system isn't configured yet. An administrator must add the `forms.puzzlesubmit` section to `config.json` with `channel`, `role`, and `publicChannel` IDs (as quoted strings)."
+        content: "The puzzle system isn't configured yet. An administrator should run `/config puzzle channel:#review role:@Staff public_channel:#puzzles` — or add `forms.puzzlesubmit` in `config.json` as fallback."
       });
     }
 
@@ -134,7 +144,7 @@ module.exports = {
     });
 
     if (!staff) {
-      return interaction.editReply({ content: "Failed to submit your puzzle: staff channel/role IDs may be wrong or the bot lacks permission there. Check config.json." });
+      return interaction.editReply({ content: "Failed to submit your puzzle: staff channel/role IDs may be wrong or the bot lacks permission there. Check `/config puzzle` or `config.json`." });
     }
 
     db.savePuzzleSubmission({

@@ -28,12 +28,13 @@ module.exports = {
         }
       }
 
-      // Check command channel restrictions via config.json (supports multi-guild)
+      // Check command channel restrictions via guild settings (supports multi-guild, merged config + DB)
       try {
         const db = require('../database/db');
-        const guildConfig = db.getGuildConfig(interaction.guildId);
-        if (guildConfig.commandChannels && guildConfig.commandChannels[command.data.name]) {
-          const allowedChannels = guildConfig.commandChannels[command.data.name];
+        const guildSettings = db.getGuildSettings(interaction.guildId);
+        const cmdChannels = guildSettings.commandChannels || {};
+        if (cmdChannels[command.data.name]) {
+          const allowedChannels = cmdChannels[command.data.name];
 
           // If the array is empty, it means no restriction (allowed everywhere)
           // If it has IDs, check if the current channel is one of them

@@ -50,6 +50,8 @@ module.exports = {
     levelingEnabled: 0,
     levelingXpRate: 15, // Average XP per message
     levelingCooldown: 60, // Seconds between XP gains
+    levelUpChannel: null,
+    embedColor: null,
 
     minecraftEnabled: 0,
     minecraftIp: "",

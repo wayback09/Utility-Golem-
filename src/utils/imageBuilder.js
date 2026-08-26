@@ -40,6 +40,8 @@ function circleClip(ctx, x, y, radius) {
 
 function getAccentColor(guildId) {
   try {
+    const settings = db.getGuildSettings(guildId);
+    if (settings && settings.embedColor) return settings.embedColor;
     const cfg = db.getGuildConfig(guildId);
     if (cfg.guild && cfg.guild.embedColor) return cfg.guild.embedColor;
   } catch (_) {}

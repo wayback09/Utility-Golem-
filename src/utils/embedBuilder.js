@@ -5,14 +5,19 @@ const config = require('../config/default.js');
 
 function getEmbedColor(guildId) {
   try {
+    if (guildId) {
+      const db = require('../database/db');
+      const settings = db.getGuildSettings(guildId);
+      if (settings && settings.embedColor) return settings.embedColor;
+      // Fallback to file for already-installed servers
+      const cfg = db.getGuildConfig(guildId);
+      if (cfg.guild && cfg.guild.embedColor) return cfg.guild.embedColor;
+    }
+  } catch (_) {}
+  try {
     const cfgPath = path.join(process.cwd(), 'config.json');
     if (fs.existsSync(cfgPath)) {
       const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-      // Guild-specific color first
-      if (guildId && cfg.guilds && cfg.guilds[guildId] && cfg.guilds[guildId].guild && cfg.guilds[guildId].guild.embedColor) {
-        return cfg.guilds[guildId].guild.embedColor;
-      }
-      // Fall back to root-level color
       if (cfg.guild && cfg.guild.embedColor) return cfg.guild.embedColor;
     }
   } catch (_) {}

@@ -7,6 +7,14 @@ const path = require('path');
 function getFormsConfig(guildId) {
   try {
     const db = require('../../database/db');
+    // DB authoritative — file is fallback only (preserves both servers)
+    const settings = db.getGuildSettings(guildId);
+    if (settings && (settings.forms_modmail_channel || settings.forms_modmail_role)) {
+      return {
+        channel: settings.forms_modmail_channel || null,
+        role: settings.forms_modmail_role || null
+      };
+    }
     const cfg = db.getGuildConfig(guildId);
     return (cfg.forms && cfg.forms.modmail) || null;
   } catch (e) {
@@ -51,7 +59,7 @@ module.exports = {
 
     if (!cfg || !cfg.channel || !cfg.role) {
       return interaction.editReply({
-        content: "The modmail system isn't configured yet. An administrator must add the `forms.modmail` section to `config.json` with the `channel` and `role` IDs (as quoted strings)."
+        content: "The modmail system isn't configured yet. An administrator should run `/config modmail channel:#staff-channel role:@Staff` — or add `forms.modmail` in `config.json` as fallback."
       });
     }
 
@@ -90,7 +98,7 @@ module.exports = {
     });
 
     if (!sent) {
-      return interaction.editReply({ content: `Failed to send your message: the staff channel/role IDs may be wrong or the bot lacks permission there. Check config.json.` });
+      return interaction.editReply({ content: `Failed to send your message: the staff channel/role IDs may be wrong or the bot lacks permission there. Check \`/config modmail\` or \`config.json\`.` });
     }
 
     return interaction.editReply({

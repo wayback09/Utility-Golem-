@@ -7,6 +7,16 @@ const path = require('path');
 
 function getFormsConfig(guildId) {
   try {
+    // DB authoritative — file is fallback only
+    const settings = db.getGuildSettings(guildId);
+    if (settings && (settings.forms_puzzle_channel || settings.forms_puzzle_role || settings.forms_puzzle_publicChannel || settings.forms_puzzle_postRole)) {
+      return {
+        channel: settings.forms_puzzle_channel || null,
+        role: settings.forms_puzzle_role || null,
+        publicChannel: settings.forms_puzzle_publicChannel || null,
+        postRole: settings.forms_puzzle_postRole || null
+      };
+    }
     const cfg = db.getGuildConfig(guildId);
     return (cfg.forms && cfg.forms.puzzlesubmit) || null;
   } catch (e) {
@@ -46,7 +56,7 @@ module.exports = {
 
       if (!publicChannel) {
         return interaction.reply({
-          content: "The public puzzle channel isn't configured or no longer exists. Set `forms.puzzlesubmit.publicChannel` in `config.json` (as a quoted string), or the bot lacks permission to see it.",
+          content: "The public puzzle channel isn't configured or no longer exists. Set it via `/config puzzle public_channel:#channel` (or `forms.puzzlesubmit.publicChannel` in `config.json` as fallback), or the bot lacks permission to see it.",
           flags: 64
         });
       }
@@ -54,7 +64,7 @@ module.exports = {
       const isForum = publicChannel.type === ChannelType.GuildForum;
       if (!isForum && !publicChannel.isTextBased()) {
         return interaction.reply({
-          content: `The public puzzle channel <#${String(cfg.publicChannel)}> is not a text channel, so puzzles can't be posted there. Use a normal text channel or a forum (forum = one post per puzzle).`,
+          content: `The public puzzle channel <#${String(cfg.publicChannel)}> is not a text channel, so puzzles can't be posted there. Use a normal text channel or a forum (forum = one post per puzzle). Check \`/config puzzle\`.`,
           flags: 64
         });
       }

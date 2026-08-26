@@ -114,40 +114,160 @@ function getGuildSettings(guildId) {
       minecraft_enabled: defaults.minecraftEnabled,
       minecraft_ip: defaults.minecraftIp,
       minecraft_port: defaults.minecraftPort,
-      enabled_modules: JSON.stringify(allModules)
+      enabled_modules: JSON.stringify(allModules),
+      commandOnlyChannels: [],
+      commandChannels: {},
+      prefix: defaults.prefix,
+      embedColor: null,
+      levelUpChannel: defaults.levelUpChannel || null,
+      // Forms — DB authoritative, file is fallback only
+      forms_modmail_channel: null,
+      forms_modmail_role: null,
+      forms_puzzle_channel: null,
+      forms_puzzle_role: null,
+      forms_puzzle_publicChannel: null,
+      forms_puzzle_postRole: null
     };
     save();
   }
 
   const settings = data.guild_settings[guildId];
 
-  // Safely overlay config.json channels and prefix on top of the database values
+  // Ensure command channel settings exist — DB authoritative, import from file only if DB empty (preserves both servers)
+  let hasCmdOnly = Array.isArray(settings.commandOnlyChannels);
+  if (!hasCmdOnly) {
+    if (typeof settings.commandOnlyChannels === 'string') {
+      try { settings.commandOnlyChannels = JSON.parse(settings.commandOnlyChannels); } catch { settings.commandOnlyChannels = []; }
+      hasCmdOnly = Array.isArray(settings.commandOnlyChannels);
+      if (!hasCmdOnly) settings.commandOnlyChannels = [];
+    } else {
+      settings.commandOnlyChannels = [];
+      hasCmdOnly = true;
+    }
+  }
+  // Import from config only if DB list is empty and file has entries (one-time)
+  if (hasCmdOnly && settings.commandOnlyChannels.length === 0 && Array.isArray(config.commandOnlyChannels) && config.commandOnlyChannels.length > 0) {
+    settings.commandOnlyChannels = config.commandOnlyChannels.map(id => String(id).trim()).filter(Boolean);
+  }
+
+  let hasCmdChannels = settings.commandChannels && typeof settings.commandChannels === 'object' && !Array.isArray(settings.commandChannels);
+  if (!hasCmdChannels) {
+    if (typeof settings.commandChannels === 'string') {
+      try { settings.commandChannels = JSON.parse(settings.commandChannels); } catch { settings.commandChannels = {}; }
+      hasCmdChannels = settings.commandChannels && typeof settings.commandChannels === 'object' && !Array.isArray(settings.commandChannels);
+      if (!hasCmdChannels) settings.commandChannels = {};
+    } else {
+      settings.commandChannels = {};
+      hasCmdChannels = true;
+    }
+  }
+  // Import from config only if DB object is empty and file has entries
+  if (hasCmdChannels && Object.keys(settings.commandChannels).length === 0 && config.commandChannels && typeof config.commandChannels === 'object' && !Array.isArray(config.commandChannels) && Object.keys(config.commandChannels).length > 0) {
+    // Deep copy and normalize to string arrays
+    const imported = {};
+    for (const [k, v] of Object.entries(config.commandChannels)) {
+      if (Array.isArray(v) && v.length > 0) imported[k] = v.map(id => String(id).trim()).filter(Boolean);
+      else if (Array.isArray(v)) imported[k] = [];
+    }
+    if (Object.keys(imported).length > 0) settings.commandChannels = imported;
+  }
+  // Normalize commandChannels values to arrays
+  for (const [cmd, val] of Object.entries(settings.commandChannels)) {
+    if (!Array.isArray(val)) {
+      if (typeof val === 'string') {
+        try { settings.commandChannels[cmd] = JSON.parse(val); } catch { settings.commandChannels[cmd] = []; }
+      } else {
+        settings.commandChannels[cmd] = [];
+      }
+    }
+  }
+
+  // Ensure new keys exist for old DBs (preserve both servers' progress, no wipe)
+  const defaults = require('../config/default').defaultSettings;
+  if (settings.prefix === undefined) settings.prefix = defaults.prefix || 'g!';
+  if (settings.embedColor === undefined) settings.embedColor = null;
+  if (settings.levelUpChannel === undefined) settings.levelUpChannel = defaults.levelUpChannel || null;
+  if (settings.forms_modmail_channel === undefined) settings.forms_modmail_channel = null;
+  if (settings.forms_modmail_role === undefined) settings.forms_modmail_role = null;
+  if (settings.forms_puzzle_channel === undefined) settings.forms_puzzle_channel = null;
+  if (settings.forms_puzzle_role === undefined) settings.forms_puzzle_role = null;
+  if (settings.forms_puzzle_publicChannel === undefined) settings.forms_puzzle_publicChannel = null;
+  if (settings.forms_puzzle_postRole === undefined) settings.forms_puzzle_postRole = null;
+
+  // DB authoritative: only use config.json as fallback when DB value is empty
+  // This keeps both existing servers' progress while allowing zero-config for new guilds
 try {
       if (config.channels) {
-        if (config.channels.logs)         settings.logging_channel     = config.channels.logs;
-        if (config.channels.welcome)      settings.welcome_channel     = config.channels.welcome;
-        if (config.channels.goodbye)      settings.goodbye_channel     = config.channels.goodbye;
-        if (config.channels.suggestions)  settings.suggestion_channel  = config.channels.suggestions;
-        if (config.channels.tickets)      settings.ticket_logs_channel = config.channels.tickets;
+        if (!settings.logging_channel && config.channels.logs)         settings.logging_channel     = config.channels.logs;
+        if (!settings.welcome_channel && config.channels.welcome)      settings.welcome_channel     = config.channels.welcome;
+        if (!settings.goodbye_channel && config.channels.goodbye)      settings.goodbye_channel     = config.channels.goodbye;
+        if (!settings.suggestion_channel && config.channels.suggestions)  settings.suggestion_channel  = config.channels.suggestions;
+        if (!settings.ticket_logs_channel && config.channels.tickets)      settings.ticket_logs_channel = config.channels.tickets;
+        // levelUp channel fallback (used by messageCreate leveling)
+        if (!settings.levelUpChannel && config.channels.levelUp) settings.levelUpChannel = config.channels.levelUp;
       }
-      if (config.guild && config.guild.prefix) {
+      // levelUp fallback from guild config (older key)
+      if (!settings.prefix && config.guild && config.guild.prefix) {
         settings.prefix = config.guild.prefix;
       }
-      // config.json is the source of truth: enabling the welcome module with a
-      // channel configured implies welcome/goodbye messages should be active.
-      if (config.modules) {
-        const welcomeModule = config.modules.welcome === true;
-        if (welcomeModule && config.channels && config.channels.welcome) {
-          settings.welcome_enabled = 1;
+      // Embed color fallback
+      if (!settings.embedColor && config.guild && config.guild.embedColor) {
+        settings.embedColor = config.guild.embedColor;
+      }
+      // Forms fallback — keep existing file config for already-installed servers
+      if (config.forms) {
+        if (config.forms.modmail) {
+          if (!settings.forms_modmail_channel && config.forms.modmail.channel) settings.forms_modmail_channel = String(config.forms.modmail.channel);
+          if (!settings.forms_modmail_role && config.forms.modmail.role) settings.forms_modmail_role = String(config.forms.modmail.role);
         }
-        if (welcomeModule && config.channels && config.channels.goodbye) {
-          settings.goodbye_enabled = 1;
+        if (config.forms.puzzlesubmit) {
+          if (!settings.forms_puzzle_channel && config.forms.puzzlesubmit.channel) settings.forms_puzzle_channel = String(config.forms.puzzlesubmit.channel);
+          if (!settings.forms_puzzle_role && config.forms.puzzlesubmit.role) settings.forms_puzzle_role = String(config.forms.puzzlesubmit.role);
+          if (!settings.forms_puzzle_publicChannel && config.forms.puzzlesubmit.publicChannel) settings.forms_puzzle_publicChannel = String(config.forms.puzzlesubmit.publicChannel);
+          if (!settings.forms_puzzle_postRole && config.forms.puzzlesubmit.postRole) settings.forms_puzzle_postRole = String(config.forms.puzzlesubmit.postRole);
         }
       }
-      // Editable welcome/goodbye message templates from config.json
+      // Welcome module auto-enable only if DB hasn't been explicitly set
+      if (config.modules) {
+        const welcomeModule = config.modules.welcome === true;
+        if (welcomeModule && config.channels) {
+          if (settings.welcome_enabled !== 1 && settings.welcome_enabled !== 0) {
+            if (config.channels.welcome) settings.welcome_enabled = 1;
+          } else if (!settings.welcome_channel && config.channels.welcome) {
+            // allow file to fill empty channel without forcing enabled state
+            settings.welcome_channel = config.channels.welcome;
+          }
+          if (settings.goodbye_enabled !== 1 && settings.goodbye_enabled !== 0) {
+            if (config.channels.goodbye) settings.goodbye_enabled = 1;
+          } else if (!settings.goodbye_channel && config.channels.goodbye) {
+            settings.goodbye_channel = config.channels.goodbye;
+          }
+        }
+      }
+      // Editable welcome/goodbye message templates — fallback only
       if (config.messages) {
-        if (config.messages.welcome)  settings.welcome_message  = config.messages.welcome;
-        if (config.messages.goodbye)  settings.goodbye_message  = config.messages.goodbye;
+        if (!settings.welcome_message && config.messages.welcome)  settings.welcome_message  = config.messages.welcome;
+        if (!settings.goodbye_message && config.messages.goodbye)  settings.goodbye_message  = config.messages.goodbye;
+      }
+      // One-time modules migration: if DB still has default all-modules and file has explicit toggles, import file once
+      if (config.modules && !settings._modulesMigrated) {
+        try {
+          const current = JSON.parse(settings.enabled_modules || '[]');
+          const allModules = ['moderation','automod','logging','welcome','roles','tickets','suggestions','giveaways','leveling','minecraft','utility','starboard'];
+          const isDefaultAll = current.length === allModules.length && allModules.every(m => current.includes(m));
+          if (isDefaultAll) {
+            const hasExplicitFalse = Object.values(config.modules).some(v => v === false);
+            if (hasExplicitFalse) {
+              const migrated = Object.entries(config.modules).filter(([,v])=>v===true).map(([k])=>k);
+              // ensure at least fallback to current if file would empty everything
+              if (migrated.length > 0) {
+                settings.enabled_modules = JSON.stringify(migrated);
+              }
+            }
+          }
+        } catch (_) {}
+        settings._modulesMigrated = 1;
+        save();
       }
     } catch (e) {
     logger.error(`Error applying config.json overrides: ${e.message}`);
@@ -163,20 +283,26 @@ function updateGuildSettings(guildId, key, value) {
 }
 
 function isModuleEnabled(guildId, moduleName) {
-  // Read from config.json first — it is the source of truth
+  // DB authoritative — allows per-guild /config module toggles without editing config.json
+  // Keeps existing file as fallback for fresh guilds before first DB write
+  try {
+    const settings = getGuildSettings(guildId);
+    if (settings && typeof settings.enabled_modules === 'string') {
+      const modules = JSON.parse(settings.enabled_modules || '[]');
+      // If DB has explicit list (including after migration), use it
+      if (Array.isArray(modules) && modules.length > 0) {
+        return modules.includes(moduleName);
+      }
+      // Empty list means all disabled — respect it
+      if (Array.isArray(modules) && modules.length === 0) return false;
+    }
+  } catch (_) {}
+  // Fallback to config.json (supports pre-existing installs before migration)
   const config = getGuildConfig(guildId);
   if (config.modules && config.modules.hasOwnProperty(moduleName)) {
     return config.modules[moduleName] === true;
   }
-  // Fallback to database if somehow not in config
-  const settings = getGuildSettings(guildId);
-  if (!settings) return false;
-  try {
-    const modules = JSON.parse(settings.enabled_modules || '[]');
-    return modules.includes(moduleName);
-  } catch (e) {
-    return false;
-  }
+  return false;
 }
 
 // Automod Settings helper

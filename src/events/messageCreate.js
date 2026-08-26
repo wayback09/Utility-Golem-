@@ -11,8 +11,8 @@ module.exports = {
 
     // 0. Commands-only channels: delete normal chat messages (supports multi-guild)
     try {
-      const guildCfg = db.getGuildConfig(message.guild.id);
-      const cmdOnlyChannels = (guildCfg.commandOnlyChannels || []).map(id => String(id).trim());
+      const settingsForCmdOnly = db.getGuildSettings(message.guild.id);
+      const cmdOnlyChannels = (settingsForCmdOnly.commandOnlyChannels || []).map(id => String(id).trim());
       if (cmdOnlyChannels.length > 0 && cmdOnlyChannels.includes(message.channelId)) {
         const prefix = (db.getGuildSettings(message.guild.id) || {}).prefix || 'g!';
         const isCommand = message.content.trim().startsWith(prefix);
@@ -83,8 +83,12 @@ module.exports = {
 
           let targetChannel = null;
           try {
-            const guildCfg = db.getGuildConfig(guildId);
-            const levelUpChannelId = (guildCfg.channels && guildCfg.channels.levelUp) || '';
+            // DB authoritative — file fallback for already-installed servers
+            let levelUpChannelId = settings.levelUpChannel || '';
+            if (!levelUpChannelId) {
+              const guildCfg = db.getGuildConfig(guildId);
+              levelUpChannelId = (guildCfg.channels && guildCfg.channels.levelUp) || '';
+            }
             if (levelUpChannelId && levelUpChannelId.trim() !== '') {
               const fetchedChannel = message.guild.channels.cache.get(levelUpChannelId.trim());
               if (fetchedChannel) targetChannel = fetchedChannel;
