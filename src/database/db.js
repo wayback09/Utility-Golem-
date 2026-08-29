@@ -422,12 +422,37 @@ function getAllTickets(guildId) {
 }
 
 // Custom Commands Helpers
-function saveCustomCommand(guildId, name, response, isEmbed = 0) {
+function saveCustomCommand(guildId, name, response, isEmbed = 0, allowedRoles = [], allowedUsers = [], requiredPermission = null) {
   if (!data.custom_commands[guildId]) {
     data.custom_commands[guildId] = {};
   }
-  data.custom_commands[guildId][name.toLowerCase()] = { response, is_embed: isEmbed };
+  const key = name.toLowerCase();
+  const existing = data.custom_commands[guildId][key] || {};
+  data.custom_commands[guildId][key] = {
+    response,
+    is_embed: isEmbed,
+    allowed_roles: Array.isArray(allowedRoles) && allowedRoles.length > 0 ? allowedRoles : (existing.allowed_roles || []),
+    allowed_users: Array.isArray(allowedUsers) && allowedUsers.length > 0 ? allowedUsers : (existing.allowed_users || []),
+    required_permission: requiredPermission !== null && requiredPermission !== undefined ? requiredPermission : (existing.required_permission || null)
+  };
   save();
+}
+
+function getCustomCommand(guildId, name) {
+  if (!data.custom_commands[guildId]) return null;
+  return data.custom_commands[guildId][name.toLowerCase()] || null;
+}
+
+function setCustomCommandPermissions(guildId, name, permissions = {}) {
+  if (!data.custom_commands[guildId] || !data.custom_commands[guildId][name.toLowerCase()]) {
+    return false;
+  }
+  const cmd = data.custom_commands[guildId][name.toLowerCase()];
+  if (permissions.allowed_roles !== undefined) cmd.allowed_roles = permissions.allowed_roles;
+  if (permissions.allowed_users !== undefined) cmd.allowed_users = permissions.allowed_users;
+  if (permissions.required_permission !== undefined) cmd.required_permission = permissions.required_permission;
+  save();
+  return true;
 }
 
 function deleteCustomCommand(guildId, name) {
@@ -567,6 +592,8 @@ module.exports = {
   getTicket,
   getAllTickets,
   saveCustomCommand,
+  getCustomCommand,
+  setCustomCommandPermissions,
   deleteCustomCommand,
   getCustomCommands,
   getUserLevel,

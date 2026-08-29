@@ -1,3 +1,4 @@
+const { PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const db = require('../database/db');
@@ -113,6 +114,47 @@ module.exports = {
       const customCmds = db.getCustomCommands(guildId);
       if (customCmds[commandName]) {
         const cmd = customCmds[commandName];
+
+        // Permission check
+        const allowedRoles = Array.isArray(cmd.allowed_roles) ? cmd.allowed_roles : [];
+        const allowedUsers = Array.isArray(cmd.allowed_users) ? cmd.allowed_users : [];
+        const requiredPermission = cmd.required_permission;
+
+        const hasRestrictions = allowedRoles.length > 0 || allowedUsers.length > 0 || !!requiredPermission;
+
+        if (hasRestrictions) {
+          const member = message.member;
+          const isOwner = message.guild.ownerId === message.author.id;
+          const isAdmin = member && member.permissions && member.permissions.has(PermissionFlagsBits.Administrator);
+
+          let isAllowed = isOwner || isAdmin;
+
+          if (!isAllowed) {
+            if (allowedUsers.includes(message.author.id)) {
+              isAllowed = true;
+            }
+            if (!isAllowed && member && member.roles && member.roles.cache) {
+              if (member.roles.cache.some(r => allowedRoles.includes(r.id))) {
+                isAllowed = true;
+              }
+            }
+            if (!isAllowed && requiredPermission && member && member.permissions) {
+              const permBit = PermissionFlagsBits[requiredPermission];
+              if (permBit && member.permissions.has(permBit)) {
+                isAllowed = true;
+              }
+            }
+          }
+
+          if (!isAllowed) {
+            const warningMsg = await message.reply(`❌ You do not have permission to use the custom command \`${prefix}${commandName}\`.`).catch(() => null);
+            if (warningMsg) {
+              setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
+            }
+            return;
+          }
+        }
+
         let response = cmd.response;
         
         // Parse basic variables

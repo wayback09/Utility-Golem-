@@ -176,7 +176,7 @@ module.exports = {
             { name: "🎫 Support Tickets", value: "`/tickets panel`, `/tickets config`" },
             { name: "🗳️ Suggestions", value: "`/suggest submit`, `/suggest config`" },
             { name: "🎁 Giveaways", value: "`/giveaway start`, `/giveaway end`, `/giveaway reroll`" },
-            { name: "📝 Custom Commands", value: "`/customcommand create`, `/customcommand delete`, `/customcommand list`" },
+            { name: "📝 Custom Commands", value: "`/customcommand create`, `/customcommand permissions`, `/customcommand delete`, `/customcommand list`" },
             { name: "🎮 Minecraft", value: "`/minecraft serverstatus`, `/minecraft players`" },
             { name: "📊 Levels", value: "`/level rank`, `/level leaderboard`, `/level reward-add`" },
             { name: "🎨 Roles", value: "`/roles button`, `/roles select`, `/roles verify`" },

@@ -16,9 +16,10 @@ Golem is a custom, modular Discord server management bot built on Node.js, disco
 8. **Puzzle Submissions:** `/puzzlesubmit` — members submit puzzles with images (plus optional answer image, details, difficulty, and hint) to a staff review channel. Approve to publish to a public channel (text or forum), reject to discard. Optionally pings a role on publish and posts the answer image as a spoiler.
 9. **Modmail:** `/modmail` — members send messages to a private staff channel with role ping; replies are relayed back to the member.
 10. **Commands-Only Channels:** Designate channels where normal chat is auto-deleted, leaving only slash commands — great for level-up, modmail, and puzzle submission channels.
-11. **Minecraft Integration:** Query server statuses, versions, MOTDs, and player lists natively.
-12. **Built-in Web Dashboard:** A beautiful, dark-themed local web dashboard served directly from the bot for viewing stats and checking mod logs.
-13. **One-Command Auto-Updates:** Run `/update` directly in Discord to automatically pull the latest code from GitHub and restart the bot.
+11. **Custom Commands & Permissions:** Create custom text/embed commands with `/customcommand create` and granularly configure who can use them (roles, users, or permissions) via `/customcommand permissions`.
+12. **Minecraft Integration:** Query server statuses, versions, MOTDs, and player lists natively.
+13. **Built-in Web Dashboard:** A beautiful, dark-themed local web dashboard served directly from the bot for viewing stats and checking mod logs.
+14. **One-Command Auto-Updates:** Run `/update` directly in Discord to automatically pull the latest code from GitHub and restart the bot.
 
 ---
 
