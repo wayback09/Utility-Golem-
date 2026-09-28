@@ -1,6 +1,22 @@
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const { PermissionFlagsBits } = require('discord.js');
+
+function suggestionCard(suggestion, messageId, upvotes, downvotes) {
+  const color = suggestion.status === 'APPROVED' ? '#2ed573'
+    : (suggestion.status === 'DENIED' ? '#ff4757' : '#1e1f29');
+  return createContainer({
+    title: `Suggestion #${messageId.substring(messageId.length - 6)} [${suggestion.status}]`,
+    description: suggestion.content,
+    color,
+    fields: [
+      { name: "Author", value: `<@${suggestion.user_id}>` },
+      { name: "Status", value: suggestion.status },
+      { name: "Votes", value: `👍 ${upvotes.length} | 👎 ${downvotes.length}` }
+    ],
+    footer: false
+  });
+}
 
 async function handleInteraction(interaction) {
   const { customId, user, guild, message } = interaction;
@@ -34,20 +50,8 @@ async function handleInteraction(interaction) {
     suggestion.status = isApprove ? 'APPROVED' : 'DENIED';
     db.saveSuggestion(suggestion);
 
-    // Update embeds
-    const embed = message.embeds[0];
-    const newEmbed = createEmbed({
-      title: `Suggestion #${message.id.substring(message.id.length - 6)} [${suggestion.status}]`,
-      description: suggestion.content,
-      color: isApprove ? '#2ed573' : '#ff4757',
-      fields: [
-        { name: "Author", value: `<@${suggestion.user_id}>`, inline: true },
-        { name: "Status", value: suggestion.status, inline: true },
-        { name: "Votes", value: `👍 ${upvotes.length} | 👎 ${downvotes.length}`, inline: false }
-      ]
-    });
-
-    await message.edit({ embeds: [newEmbed], components: [] });
+    // Update card, dropping the voting buttons (V2 message must stay V2)
+    await message.edit({ ...v2(suggestionCard(suggestion, message.id, upvotes, downvotes)) });
     return interaction.reply({ content: `Suggestion has been ${isApprove ? 'approved' : 'denied'}.`, flags: 64 });
   }
 
@@ -56,22 +60,8 @@ async function handleInteraction(interaction) {
   suggestion.votes_down = JSON.stringify(downvotes);
   db.saveSuggestion(suggestion);
 
-  // Update original embed votes count
-  const embed = message.embeds[0];
-  const color = suggestion.status === 'APPROVED' ? '#2ed573' : (suggestion.status === 'DENIED' ? '#ff4757' : '#1e1f29');
-  
-  const newEmbed = createEmbed({
-    title: `Suggestion #${message.id.substring(message.id.length - 6)} [${suggestion.status}]`,
-    description: suggestion.content,
-    color: color,
-    fields: [
-      { name: "Author", value: `<@${suggestion.user_id}>`, inline: true },
-      { name: "Status", value: suggestion.status, inline: true },
-      { name: "Votes", value: `👍 ${upvotes.length} | 👎 ${downvotes.length}`, inline: false }
-    ]
-  });
-
-  await message.edit({ embeds: [newEmbed] });
+  // Update original card vote counts
+  await message.edit({ ...v2(suggestionCard(suggestion, message.id, upvotes, downvotes)) });
   await interaction.reply({ content: "Vote updated!", flags: 64 });
 }
 

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'roles',
@@ -47,12 +47,12 @@ module.exports = {
       const row = new ActionRowBuilder().addComponents(button);
 
       await channel.send({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Get / Remove Roles",
           description: `Click below to toggle the **${role.name}** role.`,
-          color: '#1e1f29'
-        })],
-        components: [row]
+          color: '#1e1f29',
+          footer: false
+        }), [row])
       });
 
       return interaction.reply({ content: `Successfully sent Button Role panel to ${channel}!`, flags: 64 });
@@ -90,12 +90,12 @@ module.exports = {
       const row = new ActionRowBuilder().addComponents(selectMenu);
 
       await channel.send({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Self-Assign Roles Menu",
           description: "Choose any role(s) from the dropdown selection menu below.",
-          color: '#1e1f29'
-        })],
-        components: [row]
+          color: '#1e1f29',
+          footer: false
+        }), [row])
       });
 
       return interaction.reply({ content: `Successfully sent Select Menu Role panel to ${channel}!`, flags: 64 });
@@ -111,12 +111,12 @@ module.exports = {
       const row = new ActionRowBuilder().addComponents(button);
 
       await channel.send({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Server Verification",
           description: "To gain full access to this server, click the **Verify** button below to assign yourself the Verified role.",
-          color: '#2ed573'
-        })],
-        components: [row]
+          color: '#2ed573',
+          footer: false
+        }), [row])
       });
 
       return interaction.reply({ content: `Successfully sent Verification panel to ${channel}!`, flags: 64 });

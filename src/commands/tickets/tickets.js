@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'tickets',
@@ -35,12 +35,12 @@ module.exports = {
       const row = new ActionRowBuilder().addComponents(button);
 
       await channel.send({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Support Tickets",
           description: "Need help? Click the button below to open a support ticket and talk to staff.",
-          color: '#3498db'
-        })],
-        components: [row]
+          color: '#3498db',
+          footer: false
+        }), [row])
       });
 
       return interaction.reply({ content: `Successfully sent ticket panel to ${channel}!`, flags: 64 });

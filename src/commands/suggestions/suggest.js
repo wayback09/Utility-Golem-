@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'suggestions',
@@ -60,17 +60,17 @@ module.exports = {
       // Send to suggestion channel
       try {
         const msg = await targetChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: `Suggestion Pending`,
             description: content,
             fields: [
-              { name: "Author", value: `${interaction.user}`, inline: true },
-              { name: "Status", value: "PENDING", inline: true },
-              { name: "Votes", value: "👍 0 | 👎 0", inline: false }
+              { name: "Author", value: `${interaction.user}` },
+              { name: "Status", value: "PENDING" },
+              { name: "Votes", value: "👍 0 | 👎 0" }
             ],
-            color: '#1e1f29'
-          })],
-          components: [row]
+            color: '#1e1f29',
+            footer: false
+          }), [row])
         });
 
         // Save suggestion in DB

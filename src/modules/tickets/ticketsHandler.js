@@ -1,6 +1,6 @@
 const { PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 
 async function handleInteraction(interaction) {
@@ -54,13 +54,12 @@ async function handleInteraction(interaction) {
       );
 
       await ticketChannel.send({
-        content: `${user} welcome to your support ticket. Staff will be with you shortly.`,
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Support Ticket",
-          description: "Click below to claim or close this ticket.",
-          color: '#3498db'
-        })],
-        components: [row]
+          description: `${user} welcome to your support ticket. Staff will be with you shortly.\nClick below to claim or close this ticket.`,
+          color: '#3498db',
+          footer: false
+        }), [row])
       });
 
       return interaction.editReply({ content: `Ticket created! Head over to ${ticketChannel}.` });
@@ -89,10 +88,11 @@ async function handleInteraction(interaction) {
     db.saveTicket(ticket);
 
     await interaction.reply({
-      embeds: [createEmbed({
+      ...v2(createContainer({
         description: `This ticket has been claimed by ${user}.`,
-        color: '#2ed573'
-      })]
+        color: '#2ed573',
+        footer: false
+      }))
     });
   }
 

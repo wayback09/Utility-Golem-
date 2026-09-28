@@ -1,5 +1,5 @@
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 
 // Store participants in memory or within the giveaway object
@@ -58,12 +58,14 @@ async function endGiveaway(client, giveaway) {
     db.saveGiveaway(giveaway);
 
     if (message) {
-      const finishedEmbed = createEmbed({
-        title: `🎁 GIVEAWAY ENDED: ${giveaway.prize}`,
-        description: `**Winners:** ${winners.length > 0 ? winners.map(w => `<@${w}>`).join(', ') : 'No participants.'}\n**Hosted By:** <@${giveaway.host_id}>`,
-        color: '#ff4757'
-      });
-      await message.edit({ embeds: [finishedEmbed], components: [] }).catch(() => {});
+      await message.edit({
+        ...v2(createContainer({
+          title: `🎁 GIVEAWAY ENDED: ${giveaway.prize}`,
+          description: `**Winners:** ${winners.length > 0 ? winners.map(w => `<@${w}>`).join(', ') : 'No participants.'}\n**Hosted By:** <@${giveaway.host_id}>`,
+          color: '#ff4757',
+          footer: false
+        }))
+      }).catch(() => {});
     }
 
     if (winners.length > 0) {

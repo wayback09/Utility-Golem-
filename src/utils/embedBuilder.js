@@ -97,6 +97,7 @@ function hexToInt(hex) {
  * @param {string} [options.thumbnailDescription] alt text for the thumbnail
  * @param {string} [options.image] URL or `attachment://` shown as a Media Gallery item
  * @param {string} [options.imageDescription] alt text for the gallery image
+ * @param {boolean} [options.imageSpoiler=false] blur the gallery image (e.g. puzzle answers)
  * @param {boolean} [options.spoiler=false] blur the whole container
  * @param {boolean} [options.footer=true] append `-# Golem • Server Guardian` line
  * @param {boolean} [options.timestamp=false] append `<t:unix:f>` to the footer line (V2 has no native timestamp)
@@ -111,6 +112,7 @@ function createContainer({
   thumbnailDescription,
   image,
   imageDescription,
+  imageSpoiler = false,
   spoiler = false,
   footer = true,
   timestamp = false,
@@ -146,6 +148,7 @@ function createContainer({
   if (image) {
     const item = new MediaGalleryItemBuilder().setURL(image);
     if (imageDescription) item.setDescription(imageDescription.slice(0, 1024));
+    if (imageSpoiler) item.setSpoiler(true);
     container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(item));
   }
 
@@ -159,4 +162,15 @@ function createContainer({
   return container;
 }
 
-module.exports = { createEmbed, createContainer, getEmbedColor, V2_FLAGS };
+/**
+ * Wraps a Container plus optional top-level rows (ActionRows with buttons/selects)
+ * into a ready-to-send Components V2 message payload.
+ * Usage: `channel.send({ ...v2(container, [row]), files })`
+ * For ephemeral replies combine flags: `interaction.reply({ ...v2(container), flags: V2_FLAGS | 64 })`
+ * (note: spreading `v2()` then overriding `flags`).
+ */
+function v2(container, rows = []) {
+  return { components: [container, ...rows].filter(Boolean), flags: V2_FLAGS };
+}
+
+module.exports = { createEmbed, createContainer, getEmbedColor, V2_FLAGS, v2 };

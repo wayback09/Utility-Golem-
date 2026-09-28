@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'giveaways',
@@ -40,10 +40,11 @@ module.exports = {
 
       const endTime = Date.now() + (duration * 60 * 1000);
 
-      const embed = createEmbed({
+      const container = createContainer({
         title: `🎁 GIVEAWAY: ${prize}`,
         description: `Click the button below to enter!\n\n**Time Remaining:** Ends <t:${Math.round(endTime / 1000)}:R> (<t:${Math.round(endTime / 1000)}:f>)\n**Hosted By:** ${interaction.user}\n**Winners:** ${winnersCount}`,
-        color: '#3498db'
+        color: '#3498db',
+        footer: false
       });
 
       const button = new ButtonBuilder()
@@ -57,16 +58,16 @@ module.exports = {
       let giveawayMessage;
       try {
         giveawayMessage = await channel.send({
-          embeds: [embed],
-          components: [row]
+          ...v2(container, [row])
         });
       } catch (err) {
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: "Giveaway Failed",
             description: `Could not send the giveaway message in ${channel}.\n\`${err.message}\``,
-            color: '#ff4757'
-          })]
+            color: '#ff4757',
+            footer: false
+          }))
         });
       }
 
