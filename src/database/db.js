@@ -40,7 +40,9 @@ let data = {
   level_rewards: {}, // guildId -> { level: roleId }
   starboard_messages: {}, // original_msg_id -> { starboard_msg_id, guild_id, star_count }
   automod_settings: {},
-  puzzle_submissions: {} // id -> { author_id, title, question, answer, hint, difficulty, image_url, created_at }
+  puzzle_submissions: {}, // id -> { author_id, title, question, answer, hint, difficulty, image_url, created_at }
+  application_submissions: {}, // id -> { id, guild_id, author_id, answers: [{q, a}], status, created_at }
+  application_cooldowns: {} // `${guildId}:${userId}` -> timestamp of last rejection
 };
 
 // Save database atomatically
@@ -86,7 +88,8 @@ function getGuildSettings(guildId) {
     const defaults = defaultConfig.defaultSettings;
     const allModules = [
       'moderation', 'automod', 'logging', 'welcome', 'roles',
-      'tickets', 'suggestions', 'giveaways', 'leveling', 'minecraft', 'utility', 'starboard'
+      'tickets', 'suggestions', 'giveaways', 'leveling', 'minecraft', 'utility', 'starboard',
+      'applications'
     ];
 
     data.guild_settings[guildId] = {
@@ -126,7 +129,12 @@ function getGuildSettings(guildId) {
       forms_puzzle_channel: null,
       forms_puzzle_role: null,
       forms_puzzle_publicChannel: null,
-      forms_puzzle_postRole: null
+      forms_puzzle_postRole: null,
+      forms_apply_channel: null,
+      forms_apply_role: null,
+      forms_apply_acceptRole: null,
+      forms_apply_questions: null, // JSON array of { label, placeholder, required, short }
+      forms_apply_cooldown: null // seconds a rejected applicant must wait before re-applying
     };
     save();
   }
@@ -193,6 +201,11 @@ function getGuildSettings(guildId) {
   if (settings.forms_puzzle_role === undefined) settings.forms_puzzle_role = null;
   if (settings.forms_puzzle_publicChannel === undefined) settings.forms_puzzle_publicChannel = null;
   if (settings.forms_puzzle_postRole === undefined) settings.forms_puzzle_postRole = null;
+  if (settings.forms_apply_channel === undefined) settings.forms_apply_channel = null;
+  if (settings.forms_apply_role === undefined) settings.forms_apply_role = null;
+  if (settings.forms_apply_acceptRole === undefined) settings.forms_apply_acceptRole = null;
+  if (settings.forms_apply_questions === undefined) settings.forms_apply_questions = null;
+  if (settings.forms_apply_cooldown === undefined) settings.forms_apply_cooldown = null;
 
   // DB authoritative: only use config.json as fallback when DB value is empty
   // This keeps both existing servers' progress while allowing zero-config for new guilds
@@ -226,6 +239,13 @@ try {
           if (!settings.forms_puzzle_publicChannel && config.forms.puzzlesubmit.publicChannel) settings.forms_puzzle_publicChannel = String(config.forms.puzzlesubmit.publicChannel);
           if (!settings.forms_puzzle_postRole && config.forms.puzzlesubmit.postRole) settings.forms_puzzle_postRole = String(config.forms.puzzlesubmit.postRole);
         }
+        if (config.forms.apply) {
+          if (!settings.forms_apply_channel && config.forms.apply.channel) settings.forms_apply_channel = String(config.forms.apply.channel);
+          if (!settings.forms_apply_role && config.forms.apply.role) settings.forms_apply_role = String(config.forms.apply.role);
+          if (!settings.forms_apply_acceptRole && config.forms.apply.acceptRole) settings.forms_apply_acceptRole = String(config.forms.apply.acceptRole);
+          if ((!settings.forms_apply_questions || settings.forms_apply_questions === '[]') && Array.isArray(config.forms.apply.questions) && config.forms.apply.questions.length > 0) settings.forms_apply_questions = JSON.stringify(config.forms.apply.questions);
+          if (!settings.forms_apply_cooldown && config.forms.apply.cooldown) settings.forms_apply_cooldown = Number(config.forms.apply.cooldown) || null;
+        }
       }
       // Welcome module auto-enable only if DB hasn't been explicitly set
       if (config.modules) {
@@ -253,12 +273,17 @@ try {
       if (config.modules && !settings._modulesMigrated) {
         try {
           const current = JSON.parse(settings.enabled_modules || '[]');
-          const allModules = ['moderation','automod','logging','welcome','roles','tickets','suggestions','giveaways','leveling','minecraft','utility','starboard'];
+          const allModules = ['moderation','automod','logging','welcome','roles','tickets','suggestions','giveaways','leveling','minecraft','utility','starboard','applications'];
           const isDefaultAll = current.length === allModules.length && allModules.every(m => current.includes(m));
           if (isDefaultAll) {
             const hasExplicitFalse = Object.values(config.modules).some(v => v === false);
             if (hasExplicitFalse) {
               const migrated = Object.entries(config.modules).filter(([,v])=>v===true).map(([k])=>k);
+              // Preserve any currently-enabled modules the file doesn't explicitly disable
+              // (forward-compat: a module missing from config.json must never be stripped).
+              for (const m of current) {
+                if (!migrated.includes(m) && config.modules[m] !== false) migrated.push(m);
+              }
               // ensure at least fallback to current if file would empty everything
               if (migrated.length > 0) {
                 settings.enabled_modules = JSON.stringify(migrated);
@@ -267,6 +292,24 @@ try {
           }
         } catch (_) {}
         settings._modulesMigrated = 1;
+        save();
+      }
+      // v2 healing: the v1 migration ran while `roles`/`applications` were missing from
+      // config.json, so existing rows had them stripped. No admin could have disabled them
+      // deliberately (they were never toggleable), so merge them back unless explicitly false.
+      if (config.modules && settings._modulesMigrated === 1) {
+        try {
+          const modules = JSON.parse(settings.enabled_modules || '[]');
+          let changed = false;
+          for (const m of ['roles', 'applications']) {
+            if (config.modules[m] !== false && !modules.includes(m)) {
+              modules.push(m);
+              changed = true;
+            }
+          }
+          if (changed) settings.enabled_modules = JSON.stringify(modules);
+        } catch (_) {}
+        settings._modulesMigrated = 2;
         save();
       }
     } catch (e) {
@@ -555,6 +598,59 @@ function getAllPuzzleSubmissions() {
   return Object.values(data.puzzle_submissions);
 }
 
+// Staff Application Helpers
+function saveApplicationSubmission(submission) {
+  if (!data.application_submissions) data.application_submissions = {};
+  data.application_submissions[submission.id] = submission;
+  save();
+  return submission;
+}
+
+function getApplicationSubmission(id) {
+  if (!data.application_submissions) return undefined;
+  return data.application_submissions[id];
+}
+
+function deleteApplicationSubmission(id) {
+  if (data.application_submissions && data.application_submissions[id]) {
+    delete data.application_submissions[id];
+    save();
+    return true;
+  }
+  return false;
+}
+
+function getPendingApplication(guildId, userId) {
+  if (!data.application_submissions) return null;
+  return Object.values(data.application_submissions).find(
+    s => s.guild_id === guildId && s.author_id === userId && s.status === 'pending'
+  ) || null;
+}
+
+function getAllApplicationSubmissions(guildId) {
+  if (!data.application_submissions) return [];
+  const all = Object.values(data.application_submissions);
+  return guildId ? all.filter(s => s.guild_id === guildId) : all;
+}
+
+function getApplicationCooldown(guildId, userId) {
+  if (!data.application_cooldowns) return 0;
+  return data.application_cooldowns[`${guildId}:${userId}`] || 0;
+}
+
+function setApplicationCooldown(guildId, userId, timestamp) {
+  if (!data.application_cooldowns) data.application_cooldowns = {};
+  data.application_cooldowns[`${guildId}:${userId}`] = timestamp;
+  save();
+}
+
+function clearApplicationCooldown(guildId, userId) {
+  if (data.application_cooldowns && data.application_cooldowns[`${guildId}:${userId}`]) {
+    delete data.application_cooldowns[`${guildId}:${userId}`];
+    save();
+  }
+}
+
 module.exports = {
   db: {
     prepare: (sql) => {
@@ -607,5 +703,13 @@ module.exports = {
   savePuzzleSubmission,
   getPuzzleSubmission,
   deletePuzzleSubmission,
-  getAllPuzzleSubmissions
+  getAllPuzzleSubmissions,
+  saveApplicationSubmission,
+  getApplicationSubmission,
+  deleteApplicationSubmission,
+  getPendingApplication,
+  getAllApplicationSubmissions,
+  getApplicationCooldown,
+  setApplicationCooldown,
+  clearApplicationCooldown
 };

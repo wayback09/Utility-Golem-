@@ -131,6 +131,43 @@ module.exports = {
         const puzzleModule = require('../modules/forms/puzzleHandler');
         return puzzleModule.handleInteraction(interaction);
       }
+
+      // Staff application review buttons
+      if (customId.startsWith('apply_approve_') || customId.startsWith('apply_reject_')) {
+        const applyModule = require('../modules/forms/applyHandler');
+        return applyModule.handleInteraction(interaction);
+      }
+    } else if (interaction.isModalSubmit()) {
+      // Staff applications: new submission + reject-reason modals
+      if (interaction.customId === 'apply_submit' || interaction.customId.startsWith('apply_reject_')) {
+        if (interaction.guildId && !db.isModuleEnabled(interaction.guildId, 'applications')) {
+          return interaction.reply({
+            embeds: [createEmbed({
+              title: "Module Disabled",
+              description: `The **applications** module is disabled on this server. An administrator can enable it via settings.`,
+              color: '#ff4757'
+            })],
+            flags: 64
+          });
+        }
+        const applyModule = require('../modules/forms/applyHandler');
+        try {
+          return await applyModule.handleModalSubmit(interaction);
+        } catch (error) {
+          logger.error(`Error handling application modal ${interaction.customId}: ${error.message}`);
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({
+              embeds: [createEmbed({ title: "Command Error", description: "Something went wrong saving your application. Please try again.", color: '#ff4757' })],
+              flags: 64
+            }).catch(() => {});
+          } else {
+            await interaction.reply({
+              embeds: [createEmbed({ title: "Command Error", description: "Something went wrong saving your application. Please try again.", color: '#ff4757' })],
+              flags: 64
+            }).catch(() => {});
+          }
+        }
+      }
     }
   }
 };

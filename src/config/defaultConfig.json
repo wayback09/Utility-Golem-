@@ -22,7 +22,8 @@
     "giveaway": [],
     "tickets": [],
     "modmail": [],
-    "puzzlesubmit": []
+    "puzzlesubmit": [],
+    "apply": []
   },
   "commandOnlyChannels": [],
   "forms": {
@@ -35,6 +36,13 @@
       "role": "",
       "publicChannel": "",
       "postRole": ""
+    },
+    "apply": {
+      "channel": "",
+      "role": "",
+      "acceptRole": "",
+      "cooldown": 86400,
+      "questions": []
     }
   },
   "messages": {
@@ -51,8 +59,10 @@
     "suggestions": true,
     "giveaways": true,
     "starboard": false,
+    "roles": true,
     "minecraft": true,
-    "utility": true
+    "utility": true,
+    "applications": true
   },
 
   "_multiGuildNote": "Optional: define per-server overrides in 'guilds'. Each key is a Discord server ID. Any key set here overrides the root-level settings above for that specific server.",
@@ -62,18 +72,18 @@
       "channels": { "logs": "", "welcome": "", "goodbye": "", "levelUp": "", "suggestions": "", "tickets": "" },
       "commandChannels": { "level": [], "giveaway": [] },
       "commandOnlyChannels": [],
-      "forms": { "modmail": { "channel": "", "role": "" }, "puzzlesubmit": { "channel": "", "role": "", "publicChannel": "", "postRole": "" } },
+      "forms": { "modmail": { "channel": "", "role": "" }, "puzzlesubmit": { "channel": "", "role": "", "publicChannel": "", "postRole": "" }, "apply": { "channel": "", "role": "", "acceptRole": "", "cooldown": 86400, "questions": [] } },
       "messages": { "welcome": "Welcome {user} to {server}!", "goodbye": "{username} has left the server." },
-      "modules": { "moderation": true, "automod": false, "logging": true, "welcome": true, "leveling": true, "tickets": true, "suggestions": true, "giveaways": true, "starboard": false, "minecraft": true, "utility": true }
+      "modules": { "moderation": true, "automod": false, "logging": true, "welcome": true, "leveling": true, "tickets": true, "suggestions": true, "giveaways": true, "starboard": false, "roles": true, "minecraft": true, "utility": true, "applications": true }
     },
     "REPLACE_WITH_SERVER_2_ID": {
       "guild": { "id": "REPLACE_WITH_SERVER_2_ID", "prefix": "g!", "embedColor": "#FF5733" },
       "channels": { "logs": "", "welcome": "", "goodbye": "", "levelUp": "", "suggestions": "", "tickets": "" },
       "commandChannels": { "level": [], "giveaway": [] },
       "commandOnlyChannels": [],
-      "forms": { "modmail": { "channel": "", "role": "" }, "puzzlesubmit": { "channel": "", "role": "", "publicChannel": "", "postRole": "" } },
+      "forms": { "modmail": { "channel": "", "role": "" }, "puzzlesubmit": { "channel": "", "role": "", "publicChannel": "", "postRole": "" }, "apply": { "channel": "", "role": "", "acceptRole": "", "cooldown": 86400, "questions": [] } },
       "messages": { "welcome": "Welcome {user} to {server}!", "goodbye": "{username} has left the server." },
-      "modules": { "moderation": true, "automod": false, "logging": true, "welcome": true, "leveling": false, "tickets": true, "suggestions": true, "giveaways": false, "starboard": false, "minecraft": false, "utility": true }
+      "modules": { "moderation": true, "automod": false, "logging": true, "welcome": true, "leveling": false, "tickets": true, "suggestions": true, "giveaways": false, "starboard": false, "roles": true, "minecraft": false, "utility": true, "applications": true }
     }
   }
 }
