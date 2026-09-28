@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 const logger = require('../utils/logger');
 
 module.exports = {
@@ -23,13 +23,14 @@ module.exports = {
         // Strip bare raw user IDs ("Goodbye 1234567890") so they don't show as raw numbers
         msg = msg.replace(new RegExp(`(?<!<@)(?<![0-9/])${member.id}`, 'g'), member.user.username);
 
-        const embed = createEmbed({
-          title: `Goodbye!`,
-          description: msg,
-          thumbnail: member.user.displayAvatarURL({ dynamic: true })
-        });
-        
-        channel.send({ embeds: [embed] }).catch(err => {
+        channel.send({
+          ...v2(createContainer({
+            guildId,
+            title: `Goodbye!`,
+            description: msg,
+            thumbnail: member.user.displayAvatarURL({ extension: 'png', size: 256 })
+          }))
+        }).catch(err => {
           logger.error(`Goodbye message failed to send: ${err.message}`);
         });
       }
@@ -43,12 +44,14 @@ module.exports = {
           const logChannel = member.guild.channels.cache.get(settings.logging_channel);
           if (logChannel) {
             logChannel.send({
-              embeds: [createEmbed({
+              ...v2(createContainer({
+                guildId,
                 title: "Member Left",
                 description: `${member.user} (${member.user.tag}) has left the server.\nID: ${member.user.id}`,
                 color: '#ff4757',
-                thumbnail: member.user.displayAvatarURL({ dynamic: true })
-              })]
+                thumbnail: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
+                footer: false
+              }))
             }).catch(() => {});
           }
         }

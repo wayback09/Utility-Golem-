@@ -1,6 +1,6 @@
 const { AttachmentBuilder } = require('discord.js');
 const db = require('../database/db');
-const { createEmbed, createContainer, V2_FLAGS } = require('../utils/embedBuilder');
+const { createContainer, V2_FLAGS, v2 } = require('../utils/embedBuilder');
 const { generateWelcomeCard } = require('../utils/imageBuilder');
 const logger = require('../utils/logger');
 
@@ -85,12 +85,14 @@ module.exports = {
           const logChannel = member.guild.channels.cache.get(settings.logging_channel);
           if (logChannel) {
             logChannel.send({
-              embeds: [createEmbed({
+              ...v2(createContainer({
+                guildId,
                 title: "Member Joined",
                 description: `${member.user} (${member.user.tag}) has joined the server.\nID: ${member.user.id}`,
                 color: '#2ed573',
-                thumbnail: member.user.displayAvatarURL({ dynamic: true })
-              })]
+                thumbnail: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
+                footer: false
+              }))
             }).catch(() => {});
           }
         }

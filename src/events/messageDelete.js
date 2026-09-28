@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'messageDelete',
@@ -19,11 +19,13 @@ module.exports = {
       const logChannel = message.guild.channels.cache.get(settings.logging_channel);
       if (logChannel) {
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Message Deleted",
             description: `**Author:** ${message.author} (${message.author.id})\n**Channel:** ${message.channel}\n\n**Content:**\n${message.content || "*No text content (likely an embed or attachment)*"}`,
-            color: '#ff4757'
-          })]
+            color: '#ff4757',
+            footer: false
+          }))
         }).catch(() => {});
       }
     } catch (err) {}

@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'guildBanAdd',
@@ -21,12 +21,14 @@ module.exports = {
       const logChannel = ban.guild.channels.cache.get(settings.logging_channel);
       if (logChannel) {
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "User Banned",
             description: `**User:** ${ban.user} (${ban.user.tag})\n**ID:** ${ban.user.id}\n**Reason:** ${ban.reason || "No reason provided"}`,
             color: '#ff4757',
-            thumbnail: ban.user.displayAvatarURL({ dynamic: true })
-          })]
+            thumbnail: ban.user.displayAvatarURL({ extension: 'png', size: 256 }),
+            footer: false
+          }))
         }).catch(() => {});
       }
     } catch (err) {}

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { exec } = require('child_process');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 const fs = require('fs');
 const path = require('path');
@@ -31,11 +31,12 @@ module.exports = {
       if (error) {
         logger.error(`Update download failed: ${error.message}`);
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: "❌ Update Failed",
             description: `Failed to download or extract the update files:\n\`\`\`${error.message}\`\`\``,
-            color: '#ff4757'
-          })]
+            color: '#ff4757',
+            footer: false
+          }))
         });
       }
 
@@ -46,11 +47,12 @@ module.exports = {
       if (!fs.existsSync(srcSource)) {
         logger.error('Extracted src folder not found.');
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: "❌ Update Failed",
             description: "Could not locate the downloaded source files in the temp directory.",
-            color: '#ff4757'
-          })]
+            color: '#ff4757',
+            footer: false
+          }))
         });
       }
 
@@ -68,22 +70,24 @@ module.exports = {
           if (copyError) {
             logger.error(`Failed to copy files: ${copyError.message}`);
             return interaction.editReply({
-              embeds: [createEmbed({
+              ...v2(createContainer({
                 title: "❌ Update Failed",
                 description: `Failed to copy the updated files to the container:\n\`\`\`${copyError.message}\`\`\``,
-                color: '#ff4757'
-              })]
+                color: '#ff4757',
+                footer: false
+              }))
             });
           }
 
           logger.success('Auto-update files copied successfully. Restarting bot...');
 
           await interaction.editReply({
-            embeds: [createEmbed({
+            ...v2(createContainer({
               title: "✅ Update Installed",
               description: "The latest code has been downloaded and installed! The bot is now restarting to apply the updates.",
-              color: '#2ed573'
-            })]
+              color: '#2ed573',
+              footer: false
+            }))
           });
 
           // Give Pterodactyl a second to save everything, then exit the process

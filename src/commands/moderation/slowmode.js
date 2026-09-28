@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -27,11 +27,12 @@ module.exports = {
         : `Slowmode delay set to **${seconds} seconds**.`;
         
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Slowmode Updated",
           description: desc,
-          color: '#3498db'
-        })]
+          color: '#3498db',
+          footer: false
+        }))
       });
     } catch (err) {
       return interaction.reply({ content: `Failed to set slowmode: ${err.message}`, flags: 64 });

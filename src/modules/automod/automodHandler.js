@@ -1,5 +1,5 @@
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 const userMessageCache = new Map(); // userId -> [{ content, timestamp }]
 
@@ -19,12 +19,13 @@ async function handleAutomod(message) {
       await message.delete().catch(() => {});
       db.addWarning(guildId, message.author.id, message.client.user.id, "Automod: Posted discord invite link");
       await message.channel.send({
-        content: `${message.author}`,
-        embeds: [createEmbed({
+        ...v2(createContainer({
+          guildId,
           title: "Automod Action",
-          description: "Invite links are not allowed in this server.",
-          color: '#ff4757'
-        })]
+          description: `${message.author}\nInvite links are not allowed in this server.`,
+          color: '#ff4757',
+          footer: false
+        }))
       });
       return true;
     }
@@ -36,12 +37,13 @@ async function handleAutomod(message) {
     if (capsCount / content.length > 0.7) {
       await message.delete().catch(() => {});
       await message.channel.send({
-        content: `${message.author}`,
-        embeds: [createEmbed({
+        ...v2(createContainer({
+          guildId,
           title: "Automod Action",
-          description: "Please do not use excessive capital letters.",
-          color: '#ff4757'
-        })]
+          description: `${message.author}\nPlease do not use excessive capital letters.`,
+          color: '#ff4757',
+          footer: false
+        }))
       });
       return true;
     }
@@ -57,12 +59,13 @@ async function handleAutomod(message) {
         await message.delete().catch(() => {});
         db.addWarning(guildId, message.author.id, message.client.user.id, "Automod: Profanity / Bad words");
         await message.channel.send({
-          content: `${message.author}`,
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Automod Action",
-            description: "Your message contained restricted words.",
-            color: '#ff4757'
-          })]
+            description: `${message.author}\nYour message contained restricted words.`,
+            color: '#ff4757',
+            footer: false
+          }))
         });
         return true;
       }
@@ -90,12 +93,13 @@ async function handleAutomod(message) {
         await message.delete().catch(() => {});
         db.addWarning(guildId, message.author.id, message.client.user.id, "Automod: Spamming messages");
         await message.channel.send({
-          content: `${message.author}`,
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Automod Action",
-            description: "Please stop spamming messages.",
-            color: '#ff4757'
-          })]
+            description: `${message.author}\nPlease stop spamming messages.`,
+            color: '#ff4757',
+            footer: false
+          }))
         });
         return true;
       }
@@ -108,12 +112,13 @@ async function handleAutomod(message) {
         await message.delete().catch(() => {});
         db.addWarning(guildId, message.author.id, message.client.user.id, "Automod: Sending duplicate messages");
         await message.channel.send({
-          content: `${message.author}`,
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Automod Action",
-            description: "Please do not post duplicate messages.",
-            color: '#ff4757'
-          })]
+            description: `${message.author}\nPlease do not post duplicate messages.`,
+            color: '#ff4757',
+            footer: false
+          }))
         });
         return true;
       }
@@ -127,12 +132,13 @@ async function handleAutomod(message) {
       await message.delete().catch(() => {});
       db.addWarning(guildId, message.author.id, message.client.user.id, `Automod: Excessive mentions (${mentionCount})`);
       await message.channel.send({
-        content: `${message.author}`,
-        embeds: [createEmbed({
+        ...v2(createContainer({
+          guildId,
           title: "Automod Action",
-          description: `Do not mention more than ${settings.anti_mentions} users/roles at once.`,
-          color: '#ff4757'
-        })]
+          description: `${message.author}\nDo not mention more than ${settings.anti_mentions} users/roles at once.`,
+          color: '#ff4757',
+          footer: false
+        }))
       });
       return true;
     }

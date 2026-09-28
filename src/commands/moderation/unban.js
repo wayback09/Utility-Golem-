@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -15,11 +15,12 @@ module.exports = {
     try {
       await interaction.guild.members.unban(userId);
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "User Unbanned",
           description: `Successfully unbanned user ID: **${userId}**.`,
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     } catch (error) {
       return interaction.reply({ content: "Failed to unban user. Make sure the ID is correct and they are banned.", flags: 64 });

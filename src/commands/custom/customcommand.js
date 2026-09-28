@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 function formatPermissions(cmd) {
   const parts = [];
@@ -118,7 +118,7 @@ module.exports = {
       const createdCmd = db.getCustomCommand(guildId, name) || { allowed_roles: allowedRoles, allowed_users: allowedUsers, required_permission: requiredPermission };
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: 'Custom Command Created',
           description: `Command \`${prefix}${name}\` is ready to use!`,
           fields: [
@@ -126,8 +126,9 @@ module.exports = {
             { name: 'Access', value: formatPermissions(createdCmd), inline: true },
             { name: 'Preview', value: preview || '(no content)', inline: false }
           ],
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     }
 
@@ -149,7 +150,7 @@ module.exports = {
 
       if (action === 'view') {
         return interaction.reply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: `Permissions: \`${name}\``,
             fields: [
               { name: 'Allowed Roles', value: allowedRoles.length > 0 ? allowedRoles.map(id => `<@&${id}>`).join(', ') : 'None specified', inline: true },
@@ -157,8 +158,9 @@ module.exports = {
               { name: 'Required Permission', value: requiredPermission ? `\`${requiredPermission}\`` : 'None', inline: true },
               { name: 'Overall Access', value: formatPermissions(cmd), inline: false }
             ],
-            color: '#5865F2'
-          })]
+            color: '#5865F2',
+            footer: false
+          }))
         });
       }
 
@@ -248,11 +250,12 @@ module.exports = {
       const prefix = settings.prefix || 'g!';
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Custom Commands List",
           description: cmdNames.map(name => `• **${prefix}${name}** (${cmds[name].is_embed === 1 ? 'Embed' : 'Text'})\n  └ *Access:* ${formatPermissions(cmds[name])}`).join('\n\n'),
-          color: '#5865F2'
-        })]
+          color: '#5865F2',
+          footer: false
+        }))
       });
     }
   }

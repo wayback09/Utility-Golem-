@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../database/db');
 const automod = require('../modules/automod/automodHandler');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'messageCreate',
@@ -76,12 +76,6 @@ module.exports = {
             }
           }
 
-          const embed = createEmbed({
-            title: "Level Up!",
-            description: `Congratulations ${message.author}! You have reached **Level ${newLevel}**${rewardText}!`,
-            color: '#2ed573'
-          });
-
           let targetChannel = null;
           try {
             // DB authoritative — file fallback for already-installed servers
@@ -100,7 +94,15 @@ module.exports = {
 
           // Only send if a dedicated channel is configured
           if (targetChannel) {
-            targetChannel.send({ embeds: [embed] }).catch(() => {});
+            targetChannel.send({
+              ...v2(createContainer({
+                guildId,
+                title: "Level Up!",
+                description: `Congratulations ${message.author}! You have reached **Level ${newLevel}**${rewardText}!`,
+                color: '#2ed573',
+                footer: false
+              }))
+            }).catch(() => {});
           }
         }
       }
@@ -166,9 +168,11 @@ module.exports = {
 
         if (cmd.is_embed === 1 || cmd.is_embed === true || cmd.is_embed === '1') {
           return message.reply({
-            embeds: [createEmbed({
-              description: response
-            })]
+            ...v2(createContainer({
+              guildId,
+              description: response,
+              footer: false
+            }))
           });
         } else {
           return message.reply(response);

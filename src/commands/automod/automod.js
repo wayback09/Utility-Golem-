@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'automod',
@@ -64,11 +64,12 @@ module.exports = {
       ];
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Automod Status System",
           fields: fields,
-          color: '#3498db'
-        })]
+          color: '#3498db',
+          footer: false
+        }))
       });
     }
 
@@ -80,10 +81,11 @@ module.exports = {
       db.updateAutomodSettings(guildId, rule, intVal);
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           description: `Successfully updated **${rule.replace('_', ' ')}** to: **${enabled ? 'ENABLED' : 'DISABLED'}**.`,
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     }
 
@@ -92,10 +94,11 @@ module.exports = {
       db.updateAutomodSettings(guildId, 'anti_mentions', limit);
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           description: `Successfully set max mentions limit to **${limit}** (0 = disabled).`,
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     }
 

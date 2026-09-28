@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 
 module.exports = {
@@ -33,11 +33,12 @@ module.exports = {
 
       if (!data.online) {
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: "Minecraft Server Status",
             description: `❌ Server **${ip}:${port}** is currently **offline** or unreachable.`,
-            color: '#ff4757'
-          })]
+            color: '#ff4757',
+            footer: false
+          }))
         });
       }
 
@@ -45,38 +46,41 @@ module.exports = {
         const motd = data.motd && data.motd.clean ? data.motd.clean.join('\n') : 'No MOTD';
         
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: `Minecraft Server: ${ip}:${port}`,
             description: `🟢 Server is online!`,
             fields: [
               { name: "Version", value: data.version || "Unknown", inline: true },
               { name: "Players Online", value: `${data.players.online} / ${data.players.max}`, inline: true },
-              { name: "MOTD", value: `\`\`\`\n${motd}\n\`\`\``, inline: false }
+              { name: "MOTD", value: `\`\`\`\n${String(motd).slice(0, 1000)}\n\`\`\``, inline: false }
             ],
             thumbnail: `https://api.mcsrvstat.us/icon/${ip}:${port}`,
-            color: '#2ed573'
-          })]
+            color: '#2ed573',
+            footer: false
+          }))
         });
       }
 
       if (subcommand === 'players') {
         if (!data.players.list || data.players.list.length === 0) {
           return interaction.editReply({
-            embeds: [createEmbed({
+            ...v2(createContainer({
               title: `Players on ${ip}:${port}`,
               description: `No players are currently online (or player list is disabled in server properties).`,
-              color: '#3498db'
-            })]
+              color: '#3498db',
+              footer: false
+            }))
           });
         }
 
         const playerList = data.players.list.join(', ');
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: `Players on ${ip}:${port} (${data.players.online}/${data.players.max})`,
-            description: `\`\`\`\n${playerList}\n\`\`\``,
-            color: '#2ed573'
-          })]
+            description: `\`\`\`\n${playerList.slice(0, 1500)}\n\`\`\``,
+            color: '#2ed573',
+            footer: false
+          }))
         });
       }
     } catch (err) {

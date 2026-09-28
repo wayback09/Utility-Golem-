@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'voiceStateUpdate',
@@ -24,29 +24,35 @@ module.exports = {
       if (!oldState.channelId && newState.channelId) {
         // User joined voice channel
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Voice Channel Joined",
             description: `${user} joined **${newState.channel.name}**`,
-            color: '#2ed573'
-          })]
+            color: '#2ed573',
+            footer: false
+          }))
         }).catch(() => {});
       } else if (oldState.channelId && !newState.channelId) {
         // User left voice channel
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Voice Channel Left",
             description: `${user} left **${oldState.channel.name}**`,
-            color: '#ff4757'
-          })]
+            color: '#ff4757',
+            footer: false
+          }))
         }).catch(() => {});
       } else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
         // User switched voice channel
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Voice Channel Switched",
             description: `${user} moved from **${oldState.channel.name}** to **${newState.channel.name}**`,
-            color: '#ffa502'
-          })]
+            color: '#ffa502',
+            footer: false
+          }))
         }).catch(() => {});
       }
     } catch (err) {}

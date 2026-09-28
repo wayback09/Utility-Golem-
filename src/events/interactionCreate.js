@@ -1,9 +1,9 @@
-const { Collection, EmbedBuilder } = require('discord.js');
+const { Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const db = require('../database/db');
 const logger = require('../utils/logger');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2, V2_FLAGS } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'interactionCreate',
@@ -18,12 +18,13 @@ module.exports = {
       if (guildId && command.module) {
         if (!db.isModuleEnabled(guildId, command.module)) {
           return interaction.reply({
-            embeds: [createEmbed({
+            ...v2(createContainer({
               title: "Module Disabled",
               description: `The **${command.module}** module is disabled on this server. An administrator can enable it via settings.`,
-              color: '#ff4757'
-            })],
-            flags: 64
+              color: '#ff4757',
+              footer: false
+            })),
+            flags: V2_FLAGS | 64
           });
         }
       }
@@ -80,15 +81,16 @@ module.exports = {
         await command.execute(interaction, client);
       } catch (error) {
         logger.error(`Error executing command ${command.data.name}: ${error.message}`);
-        const errorEmbed = createEmbed({
+        const errorPayload = v2(createContainer({
           title: "Command Error",
           description: "An error occurred while executing this command. Please contact the administrator.",
-          color: '#ff4757'
-        });
+          color: '#ff4757',
+          footer: false
+        }));
         if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ embeds: [errorEmbed], flags: 64 });
+          await interaction.followUp({ ...errorPayload, flags: V2_FLAGS | 64 });
         } else {
-          await interaction.reply({ embeds: [errorEmbed], flags: 64 });
+          await interaction.reply({ ...errorPayload, flags: V2_FLAGS | 64 });
         }
       }
     } else if (interaction.isButton() || interaction.isStringSelectMenu()) {
@@ -142,12 +144,13 @@ module.exports = {
       if (interaction.customId === 'apply_submit' || interaction.customId.startsWith('apply_reject_')) {
         if (interaction.guildId && !db.isModuleEnabled(interaction.guildId, 'applications')) {
           return interaction.reply({
-            embeds: [createEmbed({
+            ...v2(createContainer({
               title: "Module Disabled",
               description: `The **applications** module is disabled on this server. An administrator can enable it via settings.`,
-              color: '#ff4757'
-            })],
-            flags: 64
+              color: '#ff4757',
+              footer: false
+            })),
+            flags: V2_FLAGS | 64
           });
         }
         const applyModule = require('../modules/forms/applyHandler');
@@ -155,15 +158,16 @@ module.exports = {
           return await applyModule.handleModalSubmit(interaction);
         } catch (error) {
           logger.error(`Error handling application modal ${interaction.customId}: ${error.message}`);
+          const modalError = v2(createContainer({ title: "Command Error", description: "Something went wrong saving your application. Please try again.", color: '#ff4757', footer: false }));
           if (interaction.replied || interaction.deferred) {
             await interaction.followUp({
-              embeds: [createEmbed({ title: "Command Error", description: "Something went wrong saving your application. Please try again.", color: '#ff4757' })],
-              flags: 64
+              ...modalError,
+              flags: V2_FLAGS | 64
             }).catch(() => {});
           } else {
             await interaction.reply({
-              embeds: [createEmbed({ title: "Command Error", description: "Something went wrong saving your application. Please try again.", color: '#ff4757' })],
-              flags: 64
+              ...modalError,
+              flags: V2_FLAGS | 64
             }).catch(() => {});
           }
         }

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -17,11 +17,12 @@ module.exports = {
       });
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Channel Unlocked",
           description: `This channel has been unlocked.`,
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     } catch (err) {
       return interaction.reply({ content: `Failed to unlock channel: ${err.message}`, flags: 64 });

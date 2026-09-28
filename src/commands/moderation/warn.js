@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -23,19 +23,21 @@ module.exports = {
 
     // Try to DM the warned user
     await user.send({
-      embeds: [createEmbed({
+      ...v2(createContainer({
         title: `Warning from ${interaction.guild.name}`,
         description: `You have been warned by a moderator.\n**Reason:** ${reason}`,
-        color: '#ffa502'
-      })]
+        color: '#ffa502',
+        footer: false
+      }))
     }).catch(() => {});
 
     return interaction.reply({
-      embeds: [createEmbed({
+      ...v2(createContainer({
         title: "Member Warned",
         description: `Successfully warned **${user.tag}**.\n**Reason:** ${reason}`,
-        color: '#ffa502'
-      })]
+        color: '#ffa502',
+        footer: false
+      }))
     });
   }
 };

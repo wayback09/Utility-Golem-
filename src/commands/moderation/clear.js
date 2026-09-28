@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -41,16 +41,18 @@ module.exports = {
         if (remaining > 0) await new Promise(r => setTimeout(r, 800));
       }
 
-      const embed = createEmbed({
-        description: totalDeleted > 0
-          ? `Successfully cleared **${totalDeleted}** / **${amount}** messages.${totalDeleted < amount ? ' (remaining messages are older than 14 days and cannot be bulk-deleted)' : ''}`
-          : `No deletable messages found (messages may be older than 14 days).`,
-        color: totalDeleted > 0 ? '#2ed573' : '#ffa502'
-      });
       if (totalDeleted > 0) {
         try { db.addModLog(interaction.guild.id, interaction.user.id, interaction.user.id, 'CLEAR', `Cleared ${totalDeleted}/${amount} in #${interaction.channel.name}`); } catch (_) {}
       }
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({
+        ...v2(createContainer({
+          description: totalDeleted > 0
+            ? `Successfully cleared **${totalDeleted}** / **${amount}** messages.${totalDeleted < amount ? ' (remaining messages are older than 14 days and cannot be bulk-deleted)' : ''}`
+            : `No deletable messages found (messages may be older than 14 days).`,
+          color: totalDeleted > 0 ? '#2ed573' : '#ffa502',
+          footer: false
+        }))
+      });
     } catch (err) {
       return interaction.editReply({ content: `Failed to delete messages: ${err.message}` });
     }

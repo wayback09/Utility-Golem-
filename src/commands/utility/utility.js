@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'utility',
@@ -50,15 +50,15 @@ module.exports = {
       const apiPing = Math.round(interaction.client.ws.ping);
 
       return interaction.editReply({
-        content: null,
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "🏓 Pong!",
           fields: [
             { name: "Bot Latency", value: `\`${latency}ms\``, inline: true },
             { name: "API Heartbeat", value: `\`${apiPing}ms\``, inline: true }
           ],
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     }
 
@@ -72,17 +72,18 @@ module.exports = {
       let seconds = Math.floor(totalSeconds % 60);
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Bot Uptime",
           description: `Golem has been online for:\n\`${days} days, ${hours} hours, ${minutes} minutes, and ${seconds} seconds\`.`,
-          color: '#3498db'
-        })]
+          color: '#3498db',
+          footer: false
+        }))
       });
     }
 
     if (subcommand === 'botinfo') {
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Golem Bot Profile",
           description: "Golem is a custom built Discord Server Guardian designed for ultimate modularity, security, and scalability.",
           fields: [
@@ -92,8 +93,9 @@ module.exports = {
             { name: "Guilds Joined", value: `${interaction.client.guilds.cache.size}`, inline: true },
             { name: "Uptime", value: `<t:${Math.round((Date.now() - interaction.client.uptime) / 1000)}:R>`, inline: true }
           ],
-          color: '#1e1f29'
-        })]
+          color: '#1e1f29',
+          footer: false
+        }))
       });
     }
 
@@ -111,39 +113,43 @@ module.exports = {
       }
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: `User Stats: ${user.tag}`,
           fields: fields,
-          thumbnail: user.displayAvatarURL({ dynamic: true }),
-          color: '#3498db'
-        })]
+          thumbnail: user.displayAvatarURL({ extension: 'png', size: 256 }),
+          color: '#3498db',
+          footer: false
+        }))
       });
     }
 
     if (subcommand === 'serverinfo') {
       const guild = interaction.guild;
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: `Server Profile: ${guild.name}`,
           fields: [
             { name: "Server ID", value: guild.id, inline: true },
             { name: "Total Members", value: `${guild.memberCount}`, inline: true },
             { name: "Created At", value: `<t:${Math.round(guild.createdTimestamp / 1000)}:f>`, inline: false }
           ],
-          thumbnail: guild.iconURL({ dynamic: true }),
-          color: '#1e1f29'
-        })]
+          thumbnail: guild.iconURL({ extension: 'png', size: 256 }),
+          color: '#1e1f29',
+          footer: false
+        }))
       });
     }
 
     if (subcommand === 'avatar') {
       const user = interaction.options.getUser('user') || interaction.user;
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: `${user.username}'s Avatar`,
-          image: user.displayAvatarURL({ size: 1024, dynamic: true }),
-          color: '#3498db'
-        })]
+          image: user.displayAvatarURL({ size: 1024, extension: 'png' }),
+          imageDescription: `${user.username}'s avatar`,
+          color: '#3498db',
+          footer: false
+        }))
       });
     }
 
@@ -156,17 +162,19 @@ module.exports = {
       }
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: `${user.username}'s Banner`,
-          image: fullUser.bannerURL({ size: 1024, dynamic: true }),
-          color: '#3498db'
-        })]
+          image: fullUser.bannerURL({ size: 1024, extension: 'png' }),
+          imageDescription: `${user.username}'s banner`,
+          color: '#3498db',
+          footer: false
+        }))
       });
     }
 
     if (subcommand === 'help') {
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Golem Command Manual",
           description: "All Golem commands are modern slash commands. Access them via `/` followed by category commands.",
           fields: [
@@ -180,10 +188,12 @@ module.exports = {
             { name: "🎮 Minecraft", value: "`/minecraft serverstatus`, `/minecraft players`" },
             { name: "📊 Levels", value: "`/level rank`, `/level leaderboard`, `/level reward-add`" },
             { name: "🎨 Roles", value: "`/roles button`, `/roles select`, `/roles verify`" },
-            { name: "🔧 Utility", value: "`/utility ping`, `/utility uptime`, `/utility botinfo`, `/utility userinfo`, `/utility serverinfo`" }
+            { name: "🔧 Utility", value: "`/utility ping`, `/utility uptime`, `/utility botinfo`, `/utility userinfo`, `/utility serverinfo`" },
+            { name: "📝 Applications", value: "`/apply`" }
           ],
-          color: '#1e1f29'
-        })]
+          color: '#1e1f29',
+          footer: false
+        }))
       });
     }
   }

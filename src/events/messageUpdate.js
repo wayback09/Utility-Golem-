@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'messageUpdate',
@@ -20,15 +20,17 @@ module.exports = {
       const logChannel = oldMessage.guild.channels.cache.get(settings.logging_channel);
       if (logChannel) {
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Message Edited",
             description: `**Author:** ${oldMessage.author} (${oldMessage.author.id})\n**Channel:** ${oldMessage.channel}\n[Jump to Message](${newMessage.url})`,
             fields: [
-              { name: "Before", value: oldMessage.content || "*No content*" },
-              { name: "After", value: newMessage.content || "*No content*" }
+              { name: "Before", value: (oldMessage.content || "*No content*").slice(0, 1000) },
+              { name: "After", value: (newMessage.content || "*No content*").slice(0, 1000) }
             ],
-            color: '#ffa502'
-          })]
+            color: '#ffa502',
+            footer: false
+          }))
         }).catch(() => {});
       }
     } catch (err) {}

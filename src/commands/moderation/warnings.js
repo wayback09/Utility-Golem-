@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -28,11 +28,12 @@ module.exports = {
       
       if (warnings.length === 0) {
         return interaction.reply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: `Warnings for ${user.tag}`,
             description: `${user} has no warnings.`,
-            color: '#2ed573'
-          })]
+            color: '#2ed573',
+            footer: false
+          }))
         });
       }
 
@@ -43,11 +44,12 @@ module.exports = {
       }));
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: `Warnings for ${user.tag} (${warnings.length})`,
           fields: warningFields,
-          color: '#ffa502'
-        })]
+          color: '#ffa502',
+          footer: false
+        }))
       });
     }
 
@@ -56,11 +58,12 @@ module.exports = {
       db.addModLog(guildId, user.id, interaction.user.id, 'CLEAR_WARNINGS', `Cleared ${clearedCount} warnings`);
       
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Warnings Cleared",
           description: `Successfully cleared **${clearedCount} warnings** for **${user.tag}**.`,
-          color: '#2ed573'
-        })]
+          color: '#2ed573',
+          footer: false
+        }))
       });
     }
   }

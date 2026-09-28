@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, Routes } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -46,11 +46,12 @@ module.exports = {
               const logChannel = await guild.channels.fetch(settings.logging_channel).catch(() => null);
               if (logChannel) {
                 logChannel.send({
-                  embeds: [createEmbed({
+                  ...v2(createContainer({
                     title: "User Untimed Out",
                     description: `**User:** <@${user.id}> (${user.tag})\n**Moderator:** ${interaction.user}`,
-                    color: '#2ed573'
-                  })]
+                    color: '#2ed573',
+                    footer: false
+                  }))
                 }).catch(() => {});
               }
             }
@@ -59,12 +60,13 @@ module.exports = {
       } catch (e) {}
 
       return interaction.editReply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: '✅ User Untimed Out',
           description: `Successfully removed timeout for **${user.tag}**.`,
           color: '#2ed573',
-          thumbnail: user.displayAvatarURL({ dynamic: true })
-        })]
+          thumbnail: user.displayAvatarURL({ extension: 'png', size: 256 }),
+          footer: false
+        }))
       });
     } catch (err) {
       const msg = err.status === 403 ? "I don't have permission to untimeout this user."
@@ -72,7 +74,7 @@ module.exports = {
                 : `Untimeout failed: \`${err.message}\``;
 
       return interaction.editReply({
-        embeds: [createEmbed({ title: 'Untimeout Failed', description: msg, color: '#ff4757' })],
+        ...v2(createContainer({ title: 'Untimeout Failed', description: msg, color: '#ff4757', footer: false })),
       });
     }
   }

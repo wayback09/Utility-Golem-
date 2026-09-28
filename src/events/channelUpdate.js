@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'channelUpdate',
@@ -29,12 +29,14 @@ module.exports = {
 
       if (fields.length > 0) {
         logChannel.send({
-          embeds: [createEmbed({
+          ...v2(createContainer({
+            guildId,
             title: "Channel Updated",
             description: `Channel: ${newChannel}\nID: ${newChannel.id}`,
             fields: fields,
-            color: '#ffa502'
-          })]
+            color: '#ffa502',
+            footer: false
+          }))
         }).catch(() => {});
       }
     } catch (err) {}

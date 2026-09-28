@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, Routes } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'moderation',
@@ -38,12 +38,13 @@ module.exports = {
       try { db.addModLog(interaction.guildId, user.id, interaction.user.id, 'BAN', reason); } catch (_) {}
 
       return interaction.editReply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: '🔨 User Banned',
           description: `Successfully banned **${user.tag}**\n**Reason:** ${reason}`,
           color: '#ff4757',
-          thumbnail: user.displayAvatarURL({ dynamic: true })
-        })]
+          thumbnail: user.displayAvatarURL({ extension: 'png', size: 256 }),
+          footer: false
+        }))
       });
     } catch (err) {
       const msg = err.status === 403 ? "I don't have permission to ban this user."
@@ -51,7 +52,7 @@ module.exports = {
                 : `Ban failed: \`${err.message}\``;
 
       return interaction.editReply({
-        embeds: [createEmbed({ title: 'Ban Failed', description: msg, color: '#ff4757' })],
+        ...v2(createContainer({ title: 'Ban Failed', description: msg, color: '#ff4757', footer: false })),
       });
     }
   }

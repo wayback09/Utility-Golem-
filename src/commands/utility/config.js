@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 
 module.exports = {
   module: 'utility',
@@ -177,10 +177,11 @@ module.exports = {
         if (Array.isArray(aq)) applyQCount = aq.length;
       } catch { applyQCount = 0; }
 
-      const embed = createEmbed({
-        title: `${interaction.guild.name} Settings`,
-        description: "Configure options using `/config [subcommand]`. All settings are per-server (DB authoritative, `config.json` is fallback only).",
-        fields: [
+      return interaction.reply({
+        ...v2(createContainer({
+          title: `${interaction.guild.name} Settings`,
+          description: "Configure options using `/config [subcommand]`. All settings are per-server (DB authoritative, `config.json` is fallback only).",
+          fields: [
           { name: "Enabled Modules", value: enabledModules.length > 0 ? `\`${enabledModules.join(', ')}\`` : "None", inline: false },
           { name: "Welcome System", value: settings.welcome_enabled === 1 ? `Channel: <#${settings.welcome_channel}>\nMessage: \`${settings.welcome_message}\`` : "❌ Disabled", inline: false },
           { name: "Goodbye System", value: settings.goodbye_enabled === 1 ? `Channel: <#${settings.goodbye_channel}>\nMessage: \`${settings.goodbye_message}\`` : "❌ Disabled", inline: false },
@@ -193,9 +194,10 @@ module.exports = {
           { name: "Puzzle", value: `Review: ${puzzleCh} | Role: ${puzzleRole}\nPublic: ${puzzlePublic} | Post Role: ${puzzlePost}`, inline: true },
           { name: "Applications", value: `Review: ${applyCh} | Role: ${applyRole}\nAccept Role: ${applyAccept} | Questions: ${applyQCount > 0 ? applyQCount : 'defaults (3)'}`, inline: false }
         ],
-        color: '#1e1f29'
+        color: '#1e1f29',
+        footer: false
+      }))
       });
-      return interaction.reply({ embeds: [embed] });
     }
 
     if (subcommand === 'commands') {

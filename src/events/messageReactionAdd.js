@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'messageReactionAdd',
@@ -35,45 +35,33 @@ module.exports = {
           const starboardChannel = reaction.message.guild.channels.cache.get(settings.starboard_channel);
           if (starboardChannel) {
             const existingStar = db.getStarboardMessage(reaction.message.id);
-            const embed = createEmbed({
-              author: {
-                name: reaction.message.author.tag,
-                iconURL: reaction.message.author.displayAvatarURL({ dynamic: true })
-              },
-              description: reaction.message.content || "*Attachment/Embed*",
-              fields: [
-                { name: "Original", value: `[Jump to Message](${reaction.message.url})`, inline: true }
-              ],
-              color: '#ffa502'
+            const firstAttachment = reaction.message.attachments.size > 0
+              ? reaction.message.attachments.first().url : undefined;
+            const container = createContainer({
+              guildId,
+              title: `⭐ ${starCount} | #${reaction.message.channel.name}`,
+              description: `**${reaction.message.author.tag}**\n${reaction.message.content || "*Attachment/Embed*"}\n[Jump to Message](${reaction.message.url})`,
+              thumbnail: reaction.message.author.displayAvatarURL({ extension: 'png', size: 128 }),
+              thumbnailDescription: `${reaction.message.author.tag}'s avatar`,
+              image: firstAttachment,
+              color: '#ffa502',
+              footer: false
             });
-
-            if (reaction.message.attachments.size > 0) {
-              embed.setImage(reaction.message.attachments.first().url);
-            }
 
             if (existingStar) {
               try {
                 const starboardMsg = await starboardChannel.messages.fetch(existingStar.starboard_msg_id);
                 if (starboardMsg) {
-                  await starboardMsg.edit({
-                    content: `⭐ **${starCount}** | ${reaction.message.channel}`,
-                    embeds: [embed]
-                  });
+                  await starboardMsg.edit({ ...v2(container) });
                   db.saveStarboardMessage(reaction.message.id, existingStar.starboard_msg_id, guildId, starCount);
                 }
               } catch (err) {
                 // If message deleted, recreate it
-                const newMsg = await starboardChannel.send({
-                  content: `⭐ **${starCount}** | ${reaction.message.channel}`,
-                  embeds: [embed]
-                });
+                const newMsg = await starboardChannel.send({ ...v2(container) });
                 db.saveStarboardMessage(reaction.message.id, newMsg.id, guildId, starCount);
               }
             } else {
-              const newMsg = await starboardChannel.send({
-                content: `⭐ **${starCount}** | ${reaction.message.channel}`,
-                embeds: [embed]
-              });
+              const newMsg = await starboardChannel.send({ ...v2(container) });
               db.saveStarboardMessage(reaction.message.id, newMsg.id, guildId, starCount);
             }
           }

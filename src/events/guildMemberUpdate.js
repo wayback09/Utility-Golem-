@@ -1,5 +1,5 @@
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createContainer, v2 } = require('../utils/embedBuilder');
 
 module.exports = {
   name: 'guildMemberUpdate',
@@ -31,12 +31,14 @@ module.exports = {
           }
 
           logChannel.send({
-            embeds: [createEmbed({
+            ...v2(createContainer({
+              guildId,
               title: "Member Roles Updated",
               description: `User: ${newMember.user} (${newMember.user.id})`,
               fields: fields,
-              color: '#3498db'
-            })]
+              color: '#3498db',
+              footer: false
+            }))
           }).catch(() => {});
         }
       }
@@ -50,20 +52,24 @@ module.exports = {
           if (newTimeout && newTimeout > Date.now()) {
             // Member was timed out
             logChannel.send({
-              embeds: [createEmbed({
+              ...v2(createContainer({
+                guildId,
                 title: "Member Timed Out",
                 description: `User: ${newMember.user} (${newMember.user.id})\nTimed out until: <t:${Math.round(newTimeout / 1000)}:F>`,
-                color: '#ff4757'
-              })]
+                color: '#ff4757',
+                footer: false
+              }))
             }).catch(() => {});
           } else if (oldTimeout && (!newTimeout || newTimeout <= Date.now())) {
             // Timeout removed
             logChannel.send({
-              embeds: [createEmbed({
+              ...v2(createContainer({
+                guildId,
                 title: "Member Timeout Removed",
                 description: `User: ${newMember.user} (${newMember.user.id})`,
-                color: '#2ed573'
-              })]
+                color: '#2ed573',
+                footer: false
+              }))
             }).catch(() => {});
           }
         }
