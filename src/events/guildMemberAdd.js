@@ -1,6 +1,6 @@
 const { AttachmentBuilder } = require('discord.js');
 const db = require('../database/db');
-const { createEmbed } = require('../utils/embedBuilder');
+const { createEmbed, createContainer, V2_FLAGS } = require('../utils/embedBuilder');
 const { generateWelcomeCard } = require('../utils/imageBuilder');
 const logger = require('../utils/logger');
 
@@ -31,17 +31,29 @@ module.exports = {
         try {
           const imgBuffer = await generateWelcomeCard(member);
           const attachment = new AttachmentBuilder(imgBuffer, { name: 'welcome.png' });
-          channel.send({ content: `Welcome ${member}!`, files: [attachment] }).catch(err => {
+          // Components V2: gallery items referencing attachments REQUIRE the V2 flag
+          // (sending a type-12 Media Gallery without it is rejected by the API).
+          const container = createContainer({
+            guildId,
+            title: `Welcome to ${member.guild.name}!`,
+            description: `${msg}\nYou are member #${member.guild.memberCount.toLocaleString()}`,
+            image: 'attachment://welcome.png',
+            imageDescription: `Welcome card for ${member.user.username}`,
+          });
+          channel.send({ files: [attachment], components: [container], flags: V2_FLAGS }).catch(err => {
             logger.error(`Welcome message failed to send: ${err.message}`);
           });
         } catch (err) {
           logger.error(`Welcome image generation failed: ${err.message}`);
-          const embed = createEmbed({
+          // V2 fallback (no canvas): text + avatar thumbnail in a Section, no attachment needed.
+          const container = createContainer({
+            guildId,
             title: `Welcome to ${member.guild.name}!`,
             description: msg,
-            thumbnail: member.user.displayAvatarURL({ dynamic: true })
+            thumbnail: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
+            thumbnailDescription: `${member.user.username}'s avatar`,
           });
-          channel.send({ embeds: [embed] }).catch(err => {
+          channel.send({ components: [container], flags: V2_FLAGS }).catch(err => {
             logger.error(`Welcome message failed to send: ${err.message}`);
           });
         }
