@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 const db = require('../../database/db');
 const fs = require('fs');
@@ -109,14 +109,24 @@ module.exports = {
     if (cfg.publicChannel) fields.push({ name: "Will be posted to", value: `<#${String(cfg.publicChannel)}>`, inline: true });
     if (hint) fields.push({ name: "Hint", value: hint.slice(0, 1024), inline: false });
 
-    const embed = createEmbed({
-      title: `Puzzle Submission — ${title}`,
-      description: question,
-      fields: fields,
-      color: '#9b59b6'
-    });
+    // V2 has no `content` ping — the staff mention lives in the first TextDisplay (still pings)
+    const gallery = [{ url: image.url, description: `Puzzle image for ${title}`.slice(0, 1024) }];
+    let answerFiles;
+    if (answerImage && answerImage.contentType && answerImage.contentType.startsWith('image/')) {
+      const ext = answerImage.contentType.split('/')[1] || 'png';
+      const answerName = `answer-${submissionId}.${ext}`;
+      answerFiles = [{ attachment: answerImage.url, name: answerName }];
+      gallery.push({ url: `attachment://${answerName}`, description: 'Answer image (spoiler)', spoiler: true });
+    }
 
-    if (image && image.contentType && image.contentType.startsWith('image/')) embed.setImage(image.url);
+    const container = createContainer({
+      title: `Puzzle Submission — ${title}`,
+      description: `<@&${String(cfg.role)}> — new puzzle needs review.\n${question}`,
+      fields: fields,
+      image: gallery,
+      color: '#9b59b6',
+      timestamp: true
+    });
 
     const approveBtn = new ButtonBuilder()
       .setCustomId(`puzzle_approve_${submissionId}`)
@@ -131,12 +141,8 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(approveBtn, rejectBtn);
 
     const staff = await staffChannel.send({
-      content: `<@&${String(cfg.role)}>`,
-      embeds: [embed],
-      components: [row],
-      files: answerImage && answerImage.contentType && answerImage.contentType.startsWith('image/')
-        ? [{ attachment: answerImage.url, name: `answer-${submissionId}.${answerImage.contentType.split('/')[1] || 'png'}` }]
-        : undefined,
+      ...v2(container, [row]),
+      files: answerFiles,
       allowedMentions: { parse: ['roles'] }
     }).catch(err => {
       logger.error(`Puzzle submission send failed: ${err.message}`);

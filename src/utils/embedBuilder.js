@@ -95,7 +95,7 @@ function hexToInt(hex) {
  * @param {Array<{name: string, value: string}>} [options.fields] rendered as `**name**\nvalue` blocks
  * @param {string} [options.thumbnail] URL or `attachment://` shown as Section accessory
  * @param {string} [options.thumbnailDescription] alt text for the thumbnail
- * @param {string} [options.image] URL or `attachment://` shown as a Media Gallery item
+ * @param {string|string[]|Array<{url:string,description?:string,spoiler?:boolean}>} [options.image] URL(s) or `attachment://` shown as Media Gallery items (array entries may carry per-item description/spoiler)
  * @param {string} [options.imageDescription] alt text for the gallery image
  * @param {boolean} [options.imageSpoiler=false] blur the gallery image (e.g. puzzle answers)
  * @param {boolean} [options.spoiler=false] blur the whole container
@@ -146,10 +146,21 @@ function createContainer({
   }
 
   if (image) {
-    const item = new MediaGalleryItemBuilder().setURL(image);
-    if (imageDescription) item.setDescription(imageDescription.slice(0, 1024));
-    if (imageSpoiler) item.setSpoiler(true);
-    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(item));
+    const entries = Array.isArray(image) ? image : [image];
+    const items = [];
+    for (const entry of entries) {
+      const url = typeof entry === 'string' ? entry : entry.url;
+      if (!url) continue;
+      const item = new MediaGalleryItemBuilder().setURL(url);
+      const desc = (typeof entry === 'string' ? imageDescription : (entry.description ?? imageDescription));
+      if (desc) item.setDescription(String(desc).slice(0, 1024));
+      const spoil = (typeof entry === 'string' ? imageSpoiler : (entry.spoiler ?? imageSpoiler));
+      if (spoil) item.setSpoiler(true);
+      items.push(item);
+    }
+    if (items.length > 0) {
+      container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(...items));
+    }
   }
 
   if (footer !== false) {

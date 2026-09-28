@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 const fs = require('fs');
 const path = require('path');
@@ -72,24 +72,23 @@ module.exports = {
       return interaction.editReply({ content: "The configured modmail channel isn't a text channel, so messages can't be sent there." });
     }
 
-    const embed = createEmbed({
+    // Re-host the images as message attachments and expose them through the
+    // gallery (V2 hides attachments unless a component references them)
+    const files = images.map((a, i) => ({ attachment: a.url, name: `modmail-${i}-${a.name}` }));
+    const container = createContainer({
       title: "Mod Mail Submission",
-      description: description,
+      description: `<@&${String(cfg.role)}> — new message from ${interaction.user} in ${interaction.channel}.\n${description}`,
       fields: [
         { name: "Reason", value: reason.slice(0, 1024), inline: true },
-        { name: "From", value: `${interaction.user} (ID: ${interaction.user.id})`, inline: true },
-        { name: "Channel", value: `${interaction.channel}`, inline: true }
+        { name: "From", value: `${interaction.user} (ID: ${interaction.user.id})`, inline: true }
       ],
-      color: '#3498db'
+      image: files.map(f => ({ url: `attachment://${f.name}`, description: f.name })),
+      color: '#3498db',
+      timestamp: true
     });
 
-    if (images[0]) embed.setImage(images[0].url);
-
-    const files = images.map(a => ({ attachment: a.url, name: a.name }));
-
     const sent = await targetChannel.send({
-      content: `<@&${String(cfg.role)}>`,
-      embeds: [embed],
+      ...v2(container),
       files: files.length > 0 ? files : undefined,
       allowedMentions: { parse: ['roles'] }
     }).catch(err => {

@@ -1,6 +1,6 @@
 const { PermissionFlagsBits, ChannelType } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const logger = require('../../utils/logger');
 const fs = require('fs');
 const path = require('path');
@@ -77,15 +77,17 @@ module.exports = {
       if (submission.details) fields.push({ name: "Details", value: submission.details.slice(0, 1024), inline: false });
       if (submission.hint) fields.push({ name: "Hint", value: submission.hint.slice(0, 1024), inline: false });
 
-      const publicEmbed = createEmbed({
-        title: `🧩 ${submission.title}`,
-        description: submission.question,
-        fields: fields,
-        color: '#9b59b6'
-      });
-      if (submission.image_url) publicEmbed.setImage(submission.image_url);
-
       const postRolePing = cfg && cfg.postRole ? `<@&${String(cfg.postRole)}>` : null;
+
+      const publicContainer = createContainer({
+        title: `🧩 ${submission.title}`,
+        description: `${postRolePing ? `${postRolePing}\n` : ''}${submission.question}`,
+        fields: fields,
+        image: submission.image_url || undefined,
+        imageDescription: `Puzzle image for ${submission.title}`.slice(0, 1024),
+        color: '#9b59b6',
+        timestamp: true
+      });
 
       const answerFiles = submission.answer_image_url
         ? [{ attachment: submission.answer_image_url, name: `SPOILER_answer.png` }]
@@ -98,8 +100,7 @@ module.exports = {
           postMsg = await publicChannel.threads.create({
             name: `🧩 ${submission.title}`.slice(0, 100),
             message: {
-              content: postRolePing || undefined,
-              embeds: [publicEmbed],
+              ...v2(publicContainer),
               allowedMentions: postRolePing ? { parse: ['roles'] } : undefined
             }
           });
@@ -110,8 +111,7 @@ module.exports = {
         } else {
           // Normal text channel: post the message, answer as a reply
           postMsg = await publicChannel.send({
-            content: postRolePing || undefined,
-            embeds: [publicEmbed],
+            ...v2(publicContainer),
             allowedMentions: postRolePing ? { parse: ['roles'] } : undefined
           });
           await postMsg.reply({
@@ -126,13 +126,12 @@ module.exports = {
 
       db.deletePuzzleSubmission(submissionId);
       await interaction.update({
-        content: null,
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Puzzle Approved & Posted",
           description: `**${submission.title}** was approved and posted to ${publicChannel}.`,
-          color: '#2ed573'
-        })],
-        components: []
+          color: '#2ed573',
+          footer: false
+        }))
       });
       return interaction.followUp({ content: "Posted successfully.", flags: 64 });
     }
@@ -140,13 +139,12 @@ module.exports = {
     // Reject
     db.deletePuzzleSubmission(submissionId);
     await interaction.update({
-      content: null,
-      embeds: [createEmbed({
+      ...v2(createContainer({
         title: "Puzzle Rejected",
         description: `**${submission.title}** was rejected by ${interaction.user}. The author was **not** notified.`,
-        color: '#ff4757'
-      })],
-      components: []
+        color: '#ff4757',
+        footer: false
+      }))
     });
     return interaction.followUp({ content: "Submission rejected.", flags: 64 });
   }

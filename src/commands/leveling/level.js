@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
 const db = require('../../database/db');
-const { createEmbed } = require('../../utils/embedBuilder');
+const { createContainer, v2 } = require('../../utils/embedBuilder');
 const { generateRankCard } = require('../../utils/imageBuilder');
 
 module.exports = {
@@ -72,7 +72,7 @@ module.exports = {
         const filledCount = Math.round((percentage / 100) * barSize);
         const progressBar = '█'.repeat(filledCount) + '░'.repeat(barSize - filledCount);
         return interaction.editReply({
-          embeds: [createEmbed({
+          ...v2(createContainer({
             title: `${user.username}'s Rank Status`,
             description: [
               `Here is the current leveling status for ${user}:\n`,
@@ -81,9 +81,11 @@ module.exports = {
               `✨ **XP:** \`${userStats.xp} / ${nextLevelXp}\` \`(${percentage}%)\``,
               `📊 **Progress:** \`[${progressBar}]\``
             ].join('\n'),
-            thumbnail: user.displayAvatarURL({ dynamic: true }),
-            color: '#e91e8c'
-          })]
+            thumbnail: user.displayAvatarURL({ extension: 'png', size: 256 }),
+            thumbnailDescription: `${user.username}'s avatar`,
+            color: '#e91e8c',
+            footer: false
+          }))
         });
       }
     }
@@ -114,11 +116,12 @@ module.exports = {
       }
 
       return interaction.editReply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: `Server Leveling Leaderboard`,
           description: rows.join('\n'),
-          color: '#5865F2'
-        })]
+          color: '#5865F2',
+          footer: false
+        }))
       });
     }
 
@@ -165,11 +168,12 @@ module.exports = {
         .join('\n');
 
       return interaction.reply({
-        embeds: [createEmbed({
+        ...v2(createContainer({
           title: "Level Role Rewards",
           description: desc,
-          color: '#1e1f29'
-        })]
+          color: '#1e1f29',
+          footer: false
+        }))
       });
     }
   }
